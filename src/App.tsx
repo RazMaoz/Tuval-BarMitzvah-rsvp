@@ -14,7 +14,7 @@ function App() {
   const [errorMessage, setErrorMessage] = useState('');
   
   const [blessingData, setBlessingData] = useState({ content: '', isPublic: true });
-  const [blessingStatus, setBlessingStatus] = useState<'idle' | 'submitting' | 'success'>('idle');
+  const [blessingStatus, setBlessingStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [showBlessingForm, setShowBlessingForm] = useState(false);
   const [isAILoading, setIsAILoading] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
