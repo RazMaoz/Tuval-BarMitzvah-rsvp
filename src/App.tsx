@@ -279,70 +279,71 @@ END:VCALENDAR`;
   );
 
   if (status === 'success') {
+    // If not attending, make it a very compact screen so it doesn't scroll
+    if (formData.attending === 'no') {
+      return (
+        <div dir="rtl" className="h-[100dvh] bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
+          <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-6 border border-[#4A5D4E]/20 text-center flex flex-col justify-center">
+            <Heart className="w-12 h-12 mx-auto text-[#4A5D4E] mb-4" />
+            <h1 className="text-2xl font-bold mb-2">תודה רבה!</h1>
+            <p className="text-md mb-6">חבל שלא תוכלו להגיע. להתראות בשמחות אחרות!</p>
+            {renderBlessingSection(false)}
+          </div>
+        </div>
+      );
+    }
+
+    // Attending screen
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center py-12 px-4 font-sans">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-[#4A5D4E]/20 text-center space-y-6 my-auto">
-          {formData.attending === 'yes' ? (
-            <>
-              <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E]" />
-              <h1 className="text-3xl font-bold">איזה כיף שאתם באים!</h1>
-              <p className="text-lg">התשובה שלכם התקבלה בהצלחה. נשמח לראותכם!</p>
+      <div dir="rtl" className="min-h-screen bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center py-8 px-4 font-sans">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-[#4A5D4E]/20 text-center space-y-6 my-auto">
+          <>
+            <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E]" />
+            <h1 className="text-3xl font-bold">איזה כיף שאתם באים!</h1>
+            <p className="text-lg">התשובה שלכם התקבלה בהצלחה. נשמח לראותכם!</p>
+            
+            <div className="bg-[#FDFBF7] p-4 rounded-xl space-y-4 mt-6 border border-[#4A5D4E]/10">
+              <div className="flex items-center justify-center gap-2 font-semibold text-lg">
+                <MapPin className="w-5 h-5" />
+                <span>דרכי הגעה וחניה</span>
+              </div>
+              <p className="text-md font-medium text-center">
+                חניה: "תחנת דלק מעייני שמחה, רעננה"
+              </p>
               
-              <div className="bg-[#FDFBF7] p-4 rounded-xl space-y-4 mt-6 border border-[#4A5D4E]/10">
-                <div className="flex items-center justify-center gap-2 font-semibold text-lg">
+              <div className="space-y-3 pt-2">
+                <a 
+                  href="https://waze.com/ul?q=%D7%AA%D7%97%D7%A0%D7%AA+%D7%93%D7%9C%D7%A7+%D7%9E%D7%A2%D7%99%D7%99%D7%A0%D7%99+%D7%A9%D7%9E%D7%97%D7%94,+%D7%A8%D7%A2%D7%A0%D7%A0%D7%94" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-[#4A5D4E] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#3A4A3E] transition-colors w-full"
+                >
                   <MapPin className="w-5 h-5" />
-                  <span>דרכי הגעה וחניה</span>
-                </div>
-                <p className="text-md font-medium text-center">
-                  חניה: "תחנת דלק מעייני שמחה, רעננה"
-                </p>
-                
-                <div className="space-y-3 pt-2">
-                  <a 
-                    href="https://waze.com/ul?q=%D7%AA%D7%97%D7%A0%D7%AA+%D7%93%D7%9C%D7%A7+%D7%9E%D7%A2%D7%99%D7%99%D7%A0%D7%99+%D7%A9%D7%9E%D7%97%D7%94,+%D7%A8%D7%A2%D7%A0%D7%A0%D7%94" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-[#4A5D4E] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#3A4A3E] transition-colors w-full"
-                  >
-                    <MapPin className="w-5 h-5" />
-                    ניווט באמצעות Waze
-                  </a>
+                  ניווט באמצעות Waze
+                </a>
 
-                  <a 
-                    href={googleCalendarUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border-2 border-[#4A5D4E] px-6 py-3 rounded-xl font-medium hover:bg-[#FDFBF7] transition-colors w-full"
-                  >
-                    <Calendar className="w-5 h-5" />
-                    הוספה ליומן Google
-                  </a>
+                <a 
+                  href={googleCalendarUrl} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border-2 border-[#4A5D4E] px-6 py-3 rounded-xl font-medium hover:bg-[#FDFBF7] transition-colors w-full"
+                >
+                  <Calendar className="w-5 h-5" />
+                  הוספה ליומן Google
+                </a>
 
-                  <button 
-                    onClick={handleDownloadIcs}
-                    className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border-2 border-[#4A5D4E]/50 px-6 py-3 rounded-xl font-medium hover:bg-[#FDFBF7] transition-colors w-full"
-                  >
-                    <Calendar className="w-5 h-5" />
-                    הוספה ליומנים אחרים
-                  </button>
-                </div>
+                <button 
+                  onClick={handleDownloadIcs}
+                  className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border-2 border-[#4A5D4E]/50 px-6 py-3 rounded-xl font-medium hover:bg-[#FDFBF7] transition-colors w-full"
+                >
+                  <Calendar className="w-5 h-5" />
+                  הוספה ליומנים אחרים
+                </button>
               </div>
-              
-              {renderBlessingSection(true)}
-            </>
-          ) : (
-            <>
-              <Heart className="w-16 h-16 mx-auto text-[#4A5D4E]" />
-              <h1 className="text-3xl font-bold">תודה רבה!</h1>
-              <div className="text-lg space-y-2">
-                <p>חבל שלא תוכלו להגיע.</p>
-                <p>איחולים וברכות לתובל יתקבלו בשמחה רבה 🤍✨</p>
-                <p>להתראות בשמחות אחרות!</p>
-              </div>
-
-              {renderBlessingSection(false)}
-            </>
-          )}
+            </div>
+            
+            {renderBlessingSection(true)}
+          </>
         </div>
       </div>
     );
