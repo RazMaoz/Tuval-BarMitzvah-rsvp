@@ -123,8 +123,9 @@ function App() {
   };
 
   const handleAIEnhance = async () => {
-    if (blessingData.content.trim().length < 10) {
-      alert("אנא כתבו לפחות 10 תווים (כמה מילים) כדי שהבינה המלאכותית תוכל להבין את כוונתכם ולשדרג את הברכה.");
+    const textLen = blessingData.content.trim().length;
+    if (textLen > 0 && textLen < 10) {
+      alert("אם התחלתם לכתוב, אנא כתבו לפחות 10 תווים (כמה מילים) כדי שהבינה המלאכותית תוכל להבין את כוונתכם ולשדרג את הברכה, או השאירו ריק כדי שנייצר ברכה מאפס.");
       return;
     }
     setIsAILoading(true);
