@@ -13,7 +13,7 @@ export default function Admin() {
   const [guests, setGuests] = useState<any[]>([]);
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/guests')
+    fetch('/api/guests')
       .then(res => res.json())
       .then(data => setGuests(data))
       .catch(console.error);
@@ -25,7 +25,7 @@ export default function Admin() {
     
     // API call
     try {
-      await fetch(`http://localhost:3001/api/guests/${id}/category`, {
+      await fetch(`/api/guests/${id}/category`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ category: newCategory })

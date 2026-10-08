@@ -41,7 +41,7 @@ function App() {
     
     setStatus('submitting');
     try {
-      const response = await fetch('http://localhost:3001/api/rsvp', {
+      const response = await fetch('/api/rsvp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -65,7 +65,7 @@ function App() {
     e.preventDefault();
     setBlessingStatus('submitting');
     try {
-      const response = await fetch('http://localhost:3001/api/blessings', {
+      const response = await fetch('/api/blessings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -88,7 +88,7 @@ function App() {
   const handleAIEnhance = async () => {
     setIsAILoading(true);
     try {
-      const response = await fetch('http://localhost:3001/api/generate-blessing', {
+      const response = await fetch('/api/generate-blessing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
