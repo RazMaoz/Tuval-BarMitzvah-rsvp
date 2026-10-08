@@ -123,6 +123,10 @@ function App() {
   };
 
   const handleAIEnhance = async () => {
+    if (blessingData.content.trim().length < 10) {
+      alert("אנא כתבו לפחות 10 תווים (כמה מילים) כדי שהבינה המלאכותית תוכל להבין את כוונתכם ולשדרג את הברכה.");
+      return;
+    }
     setIsAILoading(true);
     try {
       const response = await fetch('/api/generate-blessing', {
@@ -149,11 +153,11 @@ function App() {
           setBlessingData(prev => ({ ...prev, content: data.result }));
         }
       } else {
-        alert("הבינה המלאכותית שלנו קצת עמוסה כרגע (הגענו למגבלת עומס). אבל הברכה המקורית שלכם נהדרת! נשמח לקבל אותה כמו שהיא.");
+        alert("מערכת השדרוג עמוסה כרגע. תוכלו לנסות שוב בעוד מספר דקות, או לשלוח את הברכה המקורית כפי שהיא.");
       }
     } catch (err) {
       console.error("AI Generation failed", err);
-      alert("הבינה המלאכותית שלנו קצת עמוסה כרגע (הגענו למגבלת עומס). אבל הברכה המקורית שלכם נהדרת! נשמח לקבל אותה כמו שהיא.");
+      alert("מערכת השדרוג עמוסה כרגע. תוכלו לנסות שוב בעוד מספר דקות, או לשלוח את הברכה המקורית כפי שהיא.");
     } finally {
       setIsAILoading(false);
     }
@@ -236,6 +240,7 @@ END:VCALENDAR`;
           </div>
           <textarea
             required
+            minLength={10}
             value={blessingData.content}
             onChange={(e) => setBlessingData(prev => ({ ...prev, content: e.target.value }))}
             className="w-full bg-white border border-[#4A5D4E]/30 rounded-lg p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] resize-none"
