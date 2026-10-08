@@ -1,7 +1,31 @@
-import { useState } from 'react';
-import { MapPin, PartyPopper, Heart, Send, Calendar, MessageSquareHeart, Wand2, Undo2, Redo2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin, PartyPopper, Heart, Send, Calendar, MessageSquareHeart, Wand2, Undo2, Redo2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 function App() {
+  const [step, setStep] = useState(() => {
+    return window.history.state?.step || 0;
+  }); // Wizard step
+  
+  useEffect(() => {
+    if (window.history.state?.step === undefined) {
+      window.history.replaceState({ step: 0 }, '');
+    }
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.step !== undefined) {
+        setStep(event.state.step);
+      } else {
+        setStep(0);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const goToStep = (newStep: number) => {
+    window.history.pushState({ step: newStep }, '');
+    setStep(newStep);
+  };
+
   const [formData, setFormData] = useState({
     name: '',
     attending: '',
@@ -28,13 +52,27 @@ function App() {
     }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleNext = () => {
+    if (step === 1 && !formData.name.trim()) return;
+    if (step === 2 && !formData.attending) return;
+    if (step === 2 && formData.attending === 'no') {
+      goToStep(5);
+      return;
+    }
+    goToStep(step + 1);
+  };
+
+  const handlePrev = () => {
+    window.history.back();
+  };
+
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setErrorMessage('');
     
     if (formData.attending === 'yes') {
       if (formData.adults === 0) {
-        setErrorMessage('שמנו לב שסימנתם הגעה, אבל לא סומנו מבוגרים. מישהו הרי צריך להשגיח על הילדים 😉 אנא ודאו שסימנתם לפחות מבוגר אחד.');
+        setErrorMessage('אנא ודאו שסימנתם לפחות מבוגר אחד.');
         return;
       }
     }
@@ -49,7 +87,6 @@ function App() {
         body: JSON.stringify(formData),
       });
       
-      // Even if the server doesn't exist yet, we'll assume it might work or we just handle the UI.
       if (response.ok) {
         setStatus('success');
       } else {
@@ -112,11 +149,11 @@ function App() {
           setBlessingData(prev => ({ ...prev, content: data.result }));
         }
       } else {
-        alert("אירעה שגיאה ביצירת הברכה, נסו שוב.");
+        alert("הבינה המלאכותית שלנו קצת עמוסה כרגע (הגענו למגבלת עומס). אבל הברכה המקורית שלכם נהדרת! נשמח לקבל אותה כמו שהיא.");
       }
     } catch (err) {
       console.error("AI Generation failed", err);
-      alert("אירעה שגיאה ביצירת הברכה, נסו שוב.");
+      alert("הבינה המלאכותית שלנו קצת עמוסה כרגע (הגענו למגבלת עומס). אבל הברכה המקורית שלכם נהדרת! נשמח לקבל אותה כמו שהיא.");
     } finally {
       setIsAILoading(false);
     }
@@ -126,7 +163,6 @@ function App() {
     let newHist = [...history];
     let currIdx = historyIndex;
     
-    // Save current typing before undoing if not already saved
     if (currIdx === -1 || newHist[currIdx] !== blessingData.content) {
       newHist = newHist.slice(0, currIdx + 1);
       newHist.push(blessingData.content);
@@ -142,7 +178,7 @@ function App() {
   };
 
   const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
+    if (historyIndex >= 0 && historyIndex < history.length - 1) {
       const nextIdx = historyIndex + 1;
       setHistoryIndex(nextIdx);
       setBlessingData(prev => ({ ...prev, content: history[nextIdx] }));
@@ -247,7 +283,7 @@ END:VCALENDAR`;
                 onChange={() => setBlessingData(prev => ({ ...prev, isPublic: true }))}
                 className="accent-[#4A5D4E] w-4 h-4"
               />
-              גלוי לכולם באתר בר המצווה
+              גלוי לכולם באתר
             </label>
             <label className="flex items-center gap-3 cursor-pointer text-sm">
               <input 
@@ -257,7 +293,7 @@ END:VCALENDAR`;
                 onChange={() => setBlessingData(prev => ({ ...prev, isPublic: false }))}
                 className="accent-[#4A5D4E] w-4 h-4"
               />
-              פרטי (למשפחה בלבד)
+              פרטי
             </label>
           </div>
           <button
@@ -279,7 +315,6 @@ END:VCALENDAR`;
   );
 
   if (status === 'success') {
-    // If not attending, make it a very compact screen so it doesn't scroll
     if (formData.attending === 'no') {
       return (
         <div dir="rtl" className="h-[100dvh] bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
@@ -292,212 +327,200 @@ END:VCALENDAR`;
         </div>
       );
     }
-
-    // Attending screen
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center py-8 px-4 font-sans">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-[#4A5D4E]/20 text-center space-y-6 my-auto">
-          <>
-            <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E]" />
-            <h1 className="text-3xl font-bold">איזה כיף שאתם באים!</h1>
-            <p className="text-lg">התשובה שלכם התקבלה בהצלחה. נשמח לראותכם!</p>
-            
-            <div className="bg-[#FDFBF7] p-4 rounded-xl space-y-4 mt-6 border border-[#4A5D4E]/10">
-              <div className="flex items-center justify-center gap-2 font-semibold text-lg">
-                <MapPin className="w-5 h-5" />
-                <span>דרכי הגעה וחניה</span>
-              </div>
-              <p className="text-md font-medium text-center">
-                חניה: "תחנת דלק מעייני שמחה, רעננה"
-              </p>
-              
-              <div className="space-y-3 pt-2">
-                <a 
-                  href="https://waze.com/ul?q=%D7%AA%D7%97%D7%A0%D7%AA+%D7%93%D7%9C%D7%A7+%D7%9E%D7%A2%D7%99%D7%99%D7%A0%D7%99+%D7%A9%D7%9E%D7%97%D7%94,+%D7%A8%D7%A2%D7%A0%D7%A0%D7%94" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-[#4A5D4E] text-white px-6 py-3 rounded-xl font-medium hover:bg-[#3A4A3E] transition-colors w-full"
-                >
-                  <MapPin className="w-5 h-5" />
-                  ניווט באמצעות Waze
-                </a>
-
-                <a 
-                  href={googleCalendarUrl} 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border-2 border-[#4A5D4E] px-6 py-3 rounded-xl font-medium hover:bg-[#FDFBF7] transition-colors w-full"
-                >
-                  <Calendar className="w-5 h-5" />
-                  הוספה ליומן Google
-                </a>
-
-                <button 
-                  onClick={handleDownloadIcs}
-                  className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border-2 border-[#4A5D4E]/50 px-6 py-3 rounded-xl font-medium hover:bg-[#FDFBF7] transition-colors w-full"
-                >
-                  <Calendar className="w-5 h-5" />
-                  הוספה ליומנים אחרים
-                </button>
-              </div>
+      <div dir="rtl" className="h-[100dvh] bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
+        <div className="max-w-md w-full h-[90dvh] overflow-y-auto bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-[#4A5D4E]/20 text-center">
+          <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E] mb-4" />
+          <h1 className="text-3xl font-bold mb-2">איזה כיף שאתם באים!</h1>
+          <p className="text-lg">התשובה התקבלה בהצלחה.</p>
+          
+          <div className="bg-[#FDFBF7] p-4 rounded-xl space-y-4 mt-6 border border-[#4A5D4E]/10 text-right">
+            <div className="flex items-center gap-2 font-semibold text-lg text-center justify-center">
+              <MapPin className="w-5 h-5" />
+              <span>הגעה וחניה</span>
             </div>
+            <p className="text-md font-medium text-center">
+              "תחנת דלק מעייני שמחה, רעננה"
+            </p>
             
-            {renderBlessingSection(true)}
-          </>
+            <div className="space-y-3 pt-2">
+              <a 
+                href="https://waze.com/ul?q=%D7%AA%D7%97%D7%A0%D7%AA+%D7%93%D7%9C%D7%A7+%D7%9E%D7%A2%D7%99%D7%99%D7%A0%D7%99+%D7%A9%D7%9E%D7%97%D7%94,+%D7%A8%D7%A2%D7%A0%D7%A0%D7%94" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-[#4A5D4E] text-white px-4 py-3 rounded-xl font-medium hover:bg-[#3A4A3E]"
+              >
+                <MapPin className="w-5 h-5" /> ניווט ב-Waze
+              </a>
+              <a 
+                href={googleCalendarUrl} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border border-[#4A5D4E] px-4 py-3 rounded-xl font-medium"
+              >
+                <Calendar className="w-5 h-5" /> יומן Google
+              </a>
+              <button 
+                onClick={handleDownloadIcs}
+                className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border border-[#4A5D4E]/50 px-4 py-3 rounded-xl font-medium w-full"
+              >
+                <Calendar className="w-5 h-5" /> הוספה ליומנים אחרים
+              </button>
+            </div>
+          </div>
+          {renderBlessingSection(true)}
         </div>
       </div>
     );
   }
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center py-12 p-4 font-sans">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-[#4A5D4E]/10">
-        <div className="bg-[#4A5D4E] text-white text-center py-10 px-6">
-          <h1 className="text-4xl font-bold mb-3 tracking-wide">בר מצווה לתוּבַל</h1>
-          <p className="text-lg opacity-90">נשמח לראותכם ביום שמחתנו</p>
+    <div dir="rtl" className="h-[100dvh] bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
+      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-[#4A5D4E]/10 flex flex-col max-h-[90dvh]">
+        <div className="bg-[#4A5D4E] text-white text-center py-6 px-6 shrink-0">
+          <h1 className="text-2xl font-bold tracking-wide">בר מצווה לתוּבַל</h1>
+          <div className="flex items-center justify-center gap-1 mt-2">
+            {[0,1,2,3,4,5].map(i => (
+              <div key={i} className={`h-1.5 rounded-full transition-all ${i <= step ? 'w-4 bg-white' : 'w-2 bg-white/30'}`} />
+            ))}
+          </div>
         </div>
         
-        <form onSubmit={handleSubmit} className="p-8 space-y-8">
-          {/* Name */}
-          <div className="space-y-2">
-            <label className="block font-semibold text-lg" htmlFor="name">
-              שם מלא (משפחה) <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              id="name"
-              name="name"
-              required
-              value={formData.name}
-              onChange={handleChange}
-              className="w-full bg-[#FDFBF7] border border-[#4A5D4E]/30 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] transition-all"
-              placeholder="ישראל ישראלי"
-            />
-          </div>
-
-          {/* Attending */}
-          <div className="space-y-3">
-            <label className="block font-semibold text-lg">האם תגיעו?</label>
-            <div className="flex gap-4">
-              <label className="flex-1 cursor-pointer relative">
-                <input
-                  type="radio"
-                  name="attending"
-                  value="yes"
-                  required
-                  checked={formData.attending === 'yes'}
-                  onChange={handleChange}
-                  className="peer sr-only"
-                />
-                <div className="text-center py-3 border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E] peer-checked:text-white transition-all hover:bg-[#FDFBF7] peer-checked:hover:bg-[#4A5D4E]">
-                  בשמחה!
-                </div>
-              </label>
-              <label className="flex-1 cursor-pointer relative">
-                <input
-                  type="radio"
-                  name="attending"
-                  value="no"
-                  required
-                  checked={formData.attending === 'no'}
-                  onChange={handleChange}
-                  className="peer sr-only"
-                />
-                <div className="text-center py-3 border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E] peer-checked:text-white transition-all hover:bg-[#FDFBF7] peer-checked:hover:bg-[#4A5D4E]">
-                  לא נוכל
-                </div>
-              </label>
+        <div className="p-6 flex-1 overflow-y-auto">
+          {step === 0 && (
+            <div className="text-center space-y-6 animate-in slide-in-from-left-4">
+              <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E]/80" />
+              <h2 className="text-2xl font-bold">איזה כיף, נשמח לראותכם!</h2>
+              <p className="text-lg opacity-90">האירוע יתקיים ב-10.11.2026<br/>ב-West Garden, רעננה</p>
+              <button onClick={handleNext} className="mt-8 w-full bg-[#4A5D4E] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#3A4A3E]">
+                בואו נתחיל
+              </button>
             </div>
-          </div>
+          )}
 
-          {/* Conditional fields if attending */}
-          {formData.attending === 'yes' && (
-            <div className="space-y-8 animate-in fade-in slide-in-from-top-4 duration-500">
-              {/* Part */}
-              <div className="space-y-3">
-                <label className="block font-semibold text-lg">לאיזה חלק תגיעו?</label>
-                <div className="flex flex-col gap-3">
-                  {[
-                    { value: 'עלייה לתורה', label: 'עלייה לתורה (הטקס יחל בשעה 16:00)' },
-                    { value: 'מסיבה', label: 'מסיבה (החל משעה 17:00)' },
-                    { value: 'שניהם', label: 'שניהם' }
-                  ].map((option) => (
-                    <label key={option.value} className="cursor-pointer relative">
-                      <input
-                        type="radio"
-                        name="part"
-                        value={option.value}
-                        checked={formData.part === option.value}
-                        onChange={handleChange}
-                        className="peer sr-only"
-                      />
-                      <div className="text-center py-3 border border-[#4A5D4E]/30 rounded-lg peer-checked:bg-[#4A5D4E]/10 peer-checked:border-[#4A5D4E] peer-checked:font-bold transition-all hover:bg-[#FDFBF7]">
-                        {option.label}
-                      </div>
-                    </label>
-                  ))}
-                </div>
+          {step === 1 && (
+            <div className="space-y-6 animate-in slide-in-from-left-4">
+              <h2 className="text-2xl font-bold text-center mb-8">איך קוראים לכם?</h2>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                className="w-full bg-[#FDFBF7] border border-[#4A5D4E]/30 rounded-xl px-4 py-4 text-center text-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4E]"
+                placeholder="שם משפחה / מלא"
+                autoFocus
+              />
+            </div>
+          )}
+
+          {step === 2 && (
+            <div className="space-y-6 animate-in slide-in-from-left-4">
+              <h2 className="text-2xl font-bold text-center mb-8">האם תגיעו לחגוג איתנו?</h2>
+              <div className="flex flex-col gap-4">
+                <label className="cursor-pointer relative">
+                  <input type="radio" name="attending" value="yes" checked={formData.attending === 'yes'} onChange={handleChange} className="peer sr-only" />
+                  <div className="text-center py-4 text-lg border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E] peer-checked:text-white transition-all hover:bg-[#FDFBF7]">
+                    ברור, נגיע בשמחה!
+                  </div>
+                </label>
+                <label className="cursor-pointer relative">
+                  <input type="radio" name="attending" value="no" checked={formData.attending === 'no'} onChange={handleChange} className="peer sr-only" />
+                  <div className="text-center py-4 text-lg border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E] peer-checked:text-white transition-all hover:bg-[#FDFBF7]">
+                    לצערנו לא נוכל
+                  </div>
+                </label>
               </div>
+            </div>
+          )}
 
-              {/* Guests Count */}
+          {step === 3 && (
+            <div className="space-y-6 animate-in slide-in-from-left-4">
+              <h2 className="text-2xl font-bold text-center mb-8">לאיזה חלק תגיעו?</h2>
+              <div className="flex flex-col gap-3">
+                {[
+                  { value: 'עלייה לתורה', label: 'רק לעלייה לתורה (16:00)' },
+                  { value: 'מסיבה', label: 'רק למסיבה (17:00)' },
+                  { value: 'שניהם', label: 'מגיעים להכל!' }
+                ].map((option) => (
+                  <label key={option.value} className="cursor-pointer relative">
+                    <input type="radio" name="part" value={option.value} checked={formData.part === option.value} onChange={handleChange} className="peer sr-only" />
+                    <div className="text-center py-4 text-lg border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E]/10 peer-checked:border-[#4A5D4E] peer-checked:font-bold transition-all">
+                      {option.label}
+                    </div>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="space-y-6 animate-in slide-in-from-left-4">
+              <h2 className="text-2xl font-bold text-center mb-8">כמה מגיעים?</h2>
               <div className="space-y-4">
-                <label className="block font-semibold text-lg mb-4">כמה מגיעים?</label>
-                
-                <div className="flex items-center justify-between p-3 bg-[#FDFBF7] rounded-xl border border-[#4A5D4E]/10">
-                  <div className="font-medium">מבוגרים (12+)</div>
-                  <input
-                    type="number"
-                    name="adults"
-                    min="0"
-                    value={formData.adults}
-                    onChange={handleChange}
-                    className="w-20 text-center border border-[#4A5D4E]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] bg-white"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-[#FDFBF7] rounded-xl border border-[#4A5D4E]/10">
-                  <div className="font-medium">ילדים (2-12)</div>
-                  <input
-                    type="number"
-                    name="children"
-                    min="0"
-                    value={formData.children}
-                    onChange={handleChange}
-                    className="w-20 text-center border border-[#4A5D4E]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] bg-white"
-                  />
-                </div>
-                
-                <div className="flex items-center justify-between p-3 bg-[#FDFBF7] rounded-xl border border-[#4A5D4E]/10">
-                  <div className="font-medium">תינוקות (0-2)</div>
-                  <input
-                    type="number"
-                    name="babies"
-                    min="0"
-                    value={formData.babies}
-                    onChange={handleChange}
-                    className="w-20 text-center border border-[#4A5D4E]/30 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] bg-white"
-                  />
-                </div>
+                {[
+                  { id: 'adults', label: 'מבוגרים (12+)', val: formData.adults },
+                  { id: 'children', label: 'ילדים (2-12)', val: formData.children },
+                  { id: 'babies', label: 'תינוקות (0-2)', val: formData.babies }
+                ].map(field => (
+                  <div key={field.id} className="flex items-center justify-between p-4 bg-[#FDFBF7] rounded-xl border border-[#4A5D4E]/10">
+                    <div className="font-medium text-lg">{field.label}</div>
+                    <div className="flex items-center gap-4">
+                      <button onClick={() => setFormData(p => ({...p, [field.id]: Math.max(0, p[field.id as keyof typeof formData] as number - 1)}))} className="w-8 h-8 rounded-full bg-white border border-[#4A5D4E] text-[#4A5D4E] flex items-center justify-center font-bold">-</button>
+                      <span className="w-4 text-center font-bold text-lg">{field.val}</span>
+                      <button onClick={() => setFormData(p => ({...p, [field.id]: (p[field.id as keyof typeof formData] as number) + 1}))} className="w-8 h-8 rounded-full bg-[#4A5D4E] text-white flex items-center justify-center font-bold">+</button>
+                    </div>
+                  </div>
+                ))}
               </div>
+              {errorMessage && <div className="text-red-500 text-center font-medium mt-2">{errorMessage}</div>}
             </div>
           )}
-
-          {(status === 'error' || errorMessage) && (
-            <div className="text-[#4A5D4E] text-sm text-center font-medium bg-[#4A5D4E]/10 p-4 rounded-xl border border-[#4A5D4E]/20 animate-in fade-in slide-in-from-top-2">
-              {errorMessage || 'אירעה שגיאה בשליחת הטופס. אנא נסו שוב.'}
+          
+          {step === 5 && (
+            <div className="space-y-6 text-center animate-in zoom-in-95">
+              <h2 className="text-2xl font-bold mb-4">מוכנים לשלוח?</h2>
+              <div className="bg-[#FDFBF7] p-6 rounded-xl border border-[#4A5D4E]/20 space-y-2 text-right">
+                <p><strong>שם:</strong> {formData.name}</p>
+                <p><strong>הגעה:</strong> {formData.attending === 'yes' ? 'מגיעים בשמחה' : 'לא מגיעים'}</p>
+                {formData.attending === 'yes' && (
+                  <>
+                    <p><strong>חלק:</strong> {formData.part}</p>
+                    <p><strong>הרכב:</strong> {formData.adults} מבוגרים, {formData.children} ילדים, {formData.babies} תינוקות</p>
+                  </>
+                )}
+              </div>
+              <button
+                onClick={() => handleSubmit()}
+                disabled={status === 'submitting'}
+                className="w-full bg-[#4A5D4E] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3A4A3E] disabled:opacity-70"
+              >
+                {status === 'submitting' ? 'שולח...' : 'אישור סופי'}
+                {!status && <Send className="w-5 h-5 rtl:-scale-x-100" />}
+              </button>
             </div>
           )}
+        </div>
 
-          {/* Submit */}
-          <button
-            type="submit"
-            disabled={status === 'submitting' || !formData.attending}
-            className="w-full bg-[#4A5D4E] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3A4A3E] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
-          >
-            {status === 'submitting' ? 'שולח...' : 'אישור'}
-            {!status && <Send className="w-5 h-5 rtl:-scale-x-100" />}
-          </button>
-        </form>
+        {/* Footer Navigation */}
+        {step > 0 && step <= 5 && (
+          <div className="p-4 border-t border-[#4A5D4E]/10 flex items-center justify-between bg-gray-50 shrink-0">
+            <button onClick={handlePrev} className="p-2 text-[#4A5D4E] hover:bg-gray-200 rounded-lg flex items-center gap-1">
+              <ChevronRight className="w-5 h-5" /> חזור
+            </button>
+            {step < 5 && (
+              <button 
+                onClick={handleNext} 
+                disabled={
+                  (step === 1 && !formData.name.trim()) || 
+                  (step === 2 && !formData.attending)
+                }
+                className="px-6 py-2 bg-[#4A5D4E] text-white rounded-lg font-medium hover:bg-[#3A4A3E] disabled:opacity-50 flex items-center gap-1"
+              >
+                המשך <ChevronLeft className="w-5 h-5" />
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
