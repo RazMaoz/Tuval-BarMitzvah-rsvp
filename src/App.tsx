@@ -111,9 +111,12 @@ function App() {
           setHistoryIndex(newHist.length - 1);
           setBlessingData(prev => ({ ...prev, content: data.result }));
         }
+      } else {
+        alert("אירעה שגיאה ביצירת הברכה, נסו שוב.");
       }
     } catch (err) {
       console.error("AI Generation failed", err);
+      alert("אירעה שגיאה ביצירת הברכה, נסו שוב.");
     } finally {
       setIsAILoading(false);
     }
@@ -170,16 +173,23 @@ END:VCALENDAR`;
   const calendarDesc = '\u202Bאיזה כיף, נשמח לראותכם!\nהאירוע יכלול טקס עלייה לתורה (מתחילים ב־16:00)\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\n(מדובר בחנייה עירונית בתשלום)\n\nרחל, רז ותובל\u202C';
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('בר המצווה של תובל')}&dates=20261110T140000Z/20261110T170000Z&details=${encodeURIComponent(calendarDesc)}&location=${encodeURIComponent('West Garden, ויצמן 273, רעננה')}`;
 
-  const renderBlessingSection = () => (
+  const renderBlessingSection = (isAttending = true) => (
     <>
       {!showBlessingForm && blessingStatus === 'idle' && (
-        <button 
-          onClick={() => setShowBlessingForm(true)}
-          className="mt-6 flex items-center justify-center gap-2 bg-[#FDFBF7] text-[#4A5D4E] border border-[#4A5D4E]/30 px-6 py-3 rounded-xl font-medium hover:bg-[#4A5D4E]/5 transition-colors w-full"
-        >
-          <MessageSquareHeart className="w-5 h-5" />
-          השארת ברכה לתובל
-        </button>
+        <div className="mt-8 animate-in fade-in slide-in-from-bottom-2">
+          {!isAttending && (
+            <div className="text-[#4A5D4E] font-medium text-md mb-3 bg-[#FDFBF7] p-3 rounded-lg border border-[#4A5D4E]/10">
+              בכל מקרה, נשמח לקבל ברכה קטנה לתובל. אפשר להשאיר אותה ממש כאן:
+            </div>
+          )}
+          <button 
+            onClick={() => setShowBlessingForm(true)}
+            className={`flex items-center justify-center gap-2 w-full px-6 py-4 rounded-xl font-bold transition-all shadow-sm ${!isAttending ? 'bg-[#4A5D4E] text-white hover:bg-[#3A4A3E]' : 'bg-[#FDFBF7] text-[#4A5D4E] border border-[#4A5D4E]/30 hover:bg-[#4A5D4E]/5'}`}
+          >
+            <MessageSquareHeart className="w-5 h-5" />
+            {isAttending ? 'השארת ברכה לתובל' : 'כתיבת ברכה לתובל ✍️'}
+          </button>
+        </div>
       )}
 
       {showBlessingForm && blessingStatus !== 'success' && (
@@ -270,8 +280,8 @@ END:VCALENDAR`;
 
   if (status === 'success') {
     return (
-      <div dir="rtl" className="min-h-screen bg-[#FDFBF7] text-[#4A5D4E] flex items-center justify-center p-4 font-sans">
-        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-[#4A5D4E]/20 text-center space-y-6">
+      <div dir="rtl" className="min-h-screen bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center py-12 px-4 font-sans">
+        <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-8 border border-[#4A5D4E]/20 text-center space-y-6 my-auto">
           {formData.attending === 'yes' ? (
             <>
               <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E]" />
@@ -318,7 +328,7 @@ END:VCALENDAR`;
                 </div>
               </div>
               
-              {renderBlessingSection()}
+              {renderBlessingSection(true)}
             </>
           ) : (
             <>
@@ -330,7 +340,7 @@ END:VCALENDAR`;
                 <p>להתראות בשמחות אחרות!</p>
               </div>
 
-              {renderBlessingSection()}
+              {renderBlessingSection(false)}
             </>
           )}
         </div>
@@ -483,7 +493,7 @@ END:VCALENDAR`;
             disabled={status === 'submitting' || !formData.attending}
             className="w-full bg-[#4A5D4E] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3A4A3E] transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
           >
-            {status === 'submitting' ? 'שולח...' : 'אישור הגעה'}
+            {status === 'submitting' ? 'שולח...' : 'אישור'}
             {!status && <Send className="w-5 h-5 rtl:-scale-x-100" />}
           </button>
         </form>
