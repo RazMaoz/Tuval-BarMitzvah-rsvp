@@ -91,4 +91,20 @@ test.describe('RSVP App E2E Tests (Redesigned Flow)', () => {
     });
     expect(scrollInfo.bodyScrollHeight).toBeLessThanOrEqual(scrollInfo.windowHeight + 1);
   });
+
+  test('Capture visual screenshots with 50% font increase', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 780 });
+    await page.goto('/');
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'C:/Users/razmm/.gemini/antigravity/brain/2ac546f7-f9c7-4d92-9b8d-0f56fe5e39ec/screen1_font50.png' });
+
+    await page.fill('input[placeholder*="שם מלא"]', 'משפחת לוי');
+    await page.click('button:has-text("אגיע בשמחה")');
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'C:/Users/razmm/.gemini/antigravity/brain/2ac546f7-f9c7-4d92-9b8d-0f56fe5e39ec/screen2_font50.png' });
+
+    await page.click('button:has-text("המשך")');
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'C:/Users/razmm/.gemini/antigravity/brain/2ac546f7-f9c7-4d92-9b8d-0f56fe5e39ec/screen3_font50.png' });
+  });
 });

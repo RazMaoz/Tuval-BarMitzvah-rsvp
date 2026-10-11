@@ -286,14 +286,14 @@ END:VCALENDAR`;
 
               {/* Event Details Card (Clean, Readable) */}
               <div className="bg-white border border-[#EBE6DC] rounded-2xl p-2.5 space-y-1.5 shadow-xs text-sm text-[#4A5D4E]">
-                <div className="flex items-center gap-2">
-                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                <div className="flex items-start gap-2">
+                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
                   <span className="text-[#2C352E]">
                     <strong>מועד:</strong> יום שלישי, 10/11/2026 | 16:00 - 19:00
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                <div className="flex items-start gap-2">
+                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
                   <span className="text-[#2C352E]">
                     <strong>מיקום:</strong> West Garden, רעננה
                   </span>
@@ -520,7 +520,7 @@ END:VCALENDAR`;
                     type="button"
                     onClick={handleAIEnhance}
                     disabled={isAILoading}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2.5 rounded-lg text-sm font-medium shadow-xs disabled:opacity-60"
+                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2.5 rounded-lg text-xs font-semibold shadow-xs disabled:opacity-60"
                   >
                     <Wand2 className={`w-4 h-4 ${isAILoading ? 'animate-spin' : ''}`} />
                     <span>
