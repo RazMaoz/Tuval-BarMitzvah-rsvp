@@ -485,10 +485,11 @@ END:VCALENDAR`;
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
+                      aria-label="הפחת מבוגרים"
                       onClick={() =>
                         setFormData((prev) => ({ ...prev, adults: Math.max(1, prev.adults - 1) }))
                       }
-                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6] cursor-pointer"
                     >
                       -
                     </button>
@@ -497,8 +498,9 @@ END:VCALENDAR`;
                     </span>
                     <button
                       type="button"
+                      aria-label="הוסף מבוגרים"
                       onClick={() => setFormData((prev) => ({ ...prev, adults: prev.adults + 1 }))}
-                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6] cursor-pointer"
                     >
                       +
                     </button>
@@ -514,10 +516,11 @@ END:VCALENDAR`;
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
+                      aria-label="הפחת ילדים"
                       onClick={() =>
                         setFormData((prev) => ({ ...prev, children: Math.max(0, prev.children - 1) }))
                       }
-                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6] cursor-pointer"
                     >
                       -
                     </button>
@@ -526,8 +529,9 @@ END:VCALENDAR`;
                     </span>
                     <button
                       type="button"
+                      aria-label="הוסף ילדים"
                       onClick={() => setFormData((prev) => ({ ...prev, children: prev.children + 1 }))}
-                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6] cursor-pointer"
                     >
                       +
                     </button>
@@ -543,10 +547,11 @@ END:VCALENDAR`;
                   <div className="flex items-center gap-3">
                     <button
                       type="button"
+                      aria-label="הפחת תינוקות"
                       onClick={() =>
                         setFormData((prev) => ({ ...prev, babies: Math.max(0, prev.babies - 1) }))
                       }
-                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6] cursor-pointer"
                     >
                       -
                     </button>
@@ -555,8 +560,9 @@ END:VCALENDAR`;
                     </span>
                     <button
                       type="button"
+                      aria-label="הוסף תינוקות"
                       onClick={() => setFormData((prev) => ({ ...prev, babies: prev.babies + 1 }))}
-                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                      className="w-9 h-9 rounded-full border border-[#D0C8B8] flex items-center justify-center text-base font-bold text-[#4A5D4E] hover:bg-[#F4EFE6] cursor-pointer"
                     >
                       +
                     </button>
