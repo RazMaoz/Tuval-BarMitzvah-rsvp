@@ -207,10 +207,12 @@ export default function App() {
   const downloadIcs = () => {
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
+PRODID:-//Tuval Bar Mitzvah//HE
+CALSCALE:GREGORIAN
 BEGIN:VEVENT
 SUMMARY:בר־המצווה של תובל
 DTSTART:20261110T140000Z
-DTEND:20261110T190000Z
+DTEND:20261110T170000Z
 LOCATION:West Garden, רחוב ויצמן 273, רעננה
 DESCRIPTION:איזה כיף, נתראה בשמחה!\\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\\nרחל, רז ותובל מעוז
 END:VEVENT
@@ -227,7 +229,7 @@ END:VCALENDAR`;
 
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
     'בר־המצווה של תובל'
-  )}&dates=20261110T140000Z/20261110T190000Z&details=${encodeURIComponent(
+  )}&dates=20261110T140000Z/20261110T170000Z&ctz=Asia/Jerusalem&details=${encodeURIComponent(
     'איזה כיף, נתראה בשמחה!\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\nרחל, רז ותובל מעוז'
   )}&location=${encodeURIComponent('West Garden, ויצמן 273, רעננה')}`;
 
@@ -287,7 +289,7 @@ END:VCALENDAR`;
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
                   <span className="text-[#2C352E]">
-                    <strong>מועד:</strong> יום שלישי, 10/11/2026 | 16:00
+                    <strong>מועד:</strong> יום שלישי, 10/11/2026 | 16:00 - 19:00
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
