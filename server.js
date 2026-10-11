@@ -82,6 +82,8 @@ app.post('/api/rsvp', async (req, res) => {
     const finalKids = isAttending ? kidsCount : 0;
     const finalAdults = isAttending ? adultsCount : 0;
     
+    let existingGuestId = null;
+
     if (targetId) {
       const parsedId = parseInt(targetId, 10);
       if (parsedId > 0) {
@@ -90,13 +92,28 @@ app.post('/api/rsvp', async (req, res) => {
           args: [parsedId]
         });
         if (existing.rows.length > 0) {
-          await db.execute({
-            sql: `UPDATE guests SET name = ?, attending = ?, event_part = ?, babies = ?, kids = ?, adults = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-            args: [trimmedName, isAttending, finalPart, finalBabies, finalKids, finalAdults, parsedId]
-          });
-          return res.json({ success: true, guestId: parsedId, isUpdate: true });
+          existingGuestId = parsedId;
         }
       }
+    }
+
+    // Robust fallback: If no ID or ID not found, match by exact name to prevent duplicate rows
+    if (!existingGuestId && trimmedName) {
+      const existingByName = await db.execute({
+        sql: 'SELECT id FROM guests WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) ORDER BY id DESC LIMIT 1',
+        args: [trimmedName]
+      });
+      if (existingByName.rows.length > 0) {
+        existingGuestId = existingByName.rows[0].id;
+      }
+    }
+    
+    if (existingGuestId) {
+      await db.execute({
+        sql: `UPDATE guests SET name = ?, attending = ?, event_part = ?, babies = ?, kids = ?, adults = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        args: [trimmedName, isAttending, finalPart, finalBabies, finalKids, finalAdults, existingGuestId]
+      });
+      return res.json({ success: true, guestId: existingGuestId, isUpdate: true });
     }
     
     const result = await db.execute({
@@ -125,6 +142,8 @@ app.post('/api/blessings', async (req, res) => {
     
     const isPublic = (is_public === true || is_public === 1 || is_public === '1' || is_public === 'true') ? 1 : 0;
     
+    let existingBlessingId = null;
+
     if (targetId) {
       const parsedId = parseInt(targetId, 10);
       if (parsedId > 0) {
@@ -133,13 +152,28 @@ app.post('/api/blessings', async (req, res) => {
           args: [parsedId]
         });
         if (existing.rows.length > 0) {
-          await db.execute({
-            sql: `UPDATE blessings SET author_name = ?, content = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
-            args: [trimmedAuthor, trimmedContent, isPublic, parsedId]
-          });
-          return res.json({ success: true, blessingId: parsedId, isUpdate: true });
+          existingBlessingId = parsedId;
         }
       }
+    }
+
+    // Robust fallback: match by author name to update blessing rather than duplicate
+    if (!existingBlessingId && trimmedAuthor && trimmedAuthor !== 'אורח') {
+      const existingByAuthor = await db.execute({
+        sql: 'SELECT id FROM blessings WHERE LOWER(TRIM(author_name)) = LOWER(TRIM(?)) ORDER BY id DESC LIMIT 1',
+        args: [trimmedAuthor]
+      });
+      if (existingByAuthor.rows.length > 0) {
+        existingBlessingId = existingByAuthor.rows[0].id;
+      }
+    }
+    
+    if (existingBlessingId) {
+      await db.execute({
+        sql: `UPDATE blessings SET author_name = ?, content = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+        args: [trimmedAuthor, trimmedContent, isPublic, existingBlessingId]
+      });
+      return res.json({ success: true, blessingId: existingBlessingId, isUpdate: true });
     }
     
     const result = await db.execute({

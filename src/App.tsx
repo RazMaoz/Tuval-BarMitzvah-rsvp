@@ -1042,13 +1042,28 @@ END:VCALENDAR`;
                   </>
                 )}
               </div>
+
+              {/* Concluding Reassurance Card for Decline */}
+              <div className="bg-[#F4EFE6] border border-[#E5DECF] rounded-2xl p-3 text-center space-y-1.5 shadow-xs">
+                <div className="text-[16px] font-bold text-[#3E4A40] flex items-center justify-center gap-1.5">
+                  <span>🌿</span>
+                  <span>תשובתך נשמרה במערכת בהצלחה!</span>
+                </div>
+                <p className="text-[14px] text-[#526054] leading-relaxed">
+                  תודה רבה שהודעת לנו, זה עוזר לנו מאוד בהיערכות.
+                  <br />
+                  <span className="font-semibold text-[#3E4A40]">נשמח להיפגש ולחגוג יחד בשמחות הבאות!</span>
+                  <br />
+                  אפשר לסגור חלון זה בבטחה.
+                </p>
+              </div>
             </div>
 
             <div className="pt-1">
               <button
                 type="button"
                 onClick={() => goToStep(1)}
-                className="text-sm text-[#6B786D] underline hover:text-[#2C352E] py-1"
+                className="text-sm text-[#6B786D] underline hover:text-[#2C352E] py-1 cursor-pointer"
               >
                 ← טעות? עדכון תשובה
               </button>
