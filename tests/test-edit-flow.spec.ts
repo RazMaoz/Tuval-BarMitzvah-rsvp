@@ -38,8 +38,10 @@ test('Full Edit Flow: Initial Submit -> Edit Mode -> Update with Zero Duplicates
   await expect(page.locator('text=מצב עריכה: מעדכן רישום עבור')).toBeVisible();
   await expect(page.locator(`text=${testName}`)).toBeVisible();
 
-  // Take screenshot of Compact Edit Mode Badge
-  await page.screenshot({ path: 'edit_mode_banner_screenshot.png' });
+  // Take screenshot of Compact Edit Mode Badge and full screen 1
+  await page.screenshot({ path: 'C:/Users/razmm/.gemini/antigravity/brain/2ac546f7-f9c7-4d92-9b8d-0f56fe5e39ec/screen1_edit_mode.png' });
+  const banner = page.locator('text=מצב עריכה: מעדכן רישום עבור').locator('..');
+  await banner.screenshot({ path: 'C:/Users/razmm/.gemini/antigravity/brain/2ac546f7-f9c7-4d92-9b8d-0f56fe5e39ec/edit_mode_banner.png' });
 
   // 8. Continue to update guest counts
   await page.click('button:has-text("המשך לעדכון כמויות")');
