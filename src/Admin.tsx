@@ -13,6 +13,7 @@ export default function Admin() {
   const [guests, setGuests] = useState<any[]>([]);
   const [blessings, setBlessings] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'guests' | 'blessings'>('guests');
+  const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all');
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchData = async () => {
@@ -74,11 +75,40 @@ export default function Admin() {
     }
   };
 
+  const handleToggleVisibility = async (id: number, currentIsPublic: any) => {
+    const isCurrentlyPublic = Boolean(Number(currentIsPublic));
+    const newIsPublic = !isCurrentlyPublic;
+    
+    // Optimistic UI update
+    setBlessings(prev => prev.map(b => b.id === id ? { ...b, is_public: newIsPublic ? 1 : 0 } : b));
+    
+    try {
+      await fetch(`/api/blessings/${id}/visibility`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_public: newIsPublic })
+      });
+    } catch (err) {
+      console.error(err);
+      fetchData();
+    }
+  };
+
   const attendingGuests = guests.filter(g => g.attending);
   const totalAdults = attendingGuests.reduce((sum, g) => sum + (g.adults || 0), 0);
   const totalKids = attendingGuests.reduce((sum, g) => sum + (g.kids || 0), 0);
   const totalBabies = attendingGuests.reduce((sum, g) => sum + (g.babies || 0), 0);
   const totalGuests = totalAdults + totalKids + totalBabies;
+
+  const publicBlessingsCount = blessings.filter(b => Boolean(Number(b.is_public))).length;
+  const privateBlessingsCount = blessings.length - publicBlessingsCount;
+
+  const filteredBlessings = blessings.filter(b => {
+    const isPub = Boolean(Number(b.is_public));
+    if (visibilityFilter === 'public') return isPub;
+    if (visibilityFilter === 'private') return !isPub;
+    return true;
+  });
 
   return (
     <div dir="rtl" className="min-h-screen bg-[#FDFBF7] p-4 sm:p-8 text-[#4A5D4E] font-sans">
@@ -234,61 +264,116 @@ export default function Admin() {
         {/* TAB 2: BLESSINGS LIST */}
         {activeTab === 'blessings' && (
           <div className="space-y-4">
-            {blessings.length === 0 ? (
+            
+            {/* Blessings Sub-filter */}
+            <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-3.5 rounded-2xl border border-[#4A5D4E]/15">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-[#2C352E]">סינון חשיפה:</span>
+                <button
+                  onClick={() => setVisibilityFilter('all')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    visibilityFilter === 'all'
+                      ? 'bg-[#4A5D4E] text-white shadow-xs'
+                      : 'bg-[#FDFBF7] text-[#555] hover:bg-[#F4EFE6]'
+                  }`}
+                >
+                  הכל ({blessings.length})
+                </button>
+                <button
+                  onClick={() => setVisibilityFilter('public')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    visibilityFilter === 'public'
+                      ? 'bg-emerald-700 text-white shadow-xs'
+                      : 'bg-[#FDFBF7] text-[#555] hover:bg-[#F4EFE6]'
+                  }`}
+                >
+                  🌐 גלויות לכולם ({publicBlessingsCount})
+                </button>
+                <button
+                  onClick={() => setVisibilityFilter('private')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                    visibilityFilter === 'private'
+                      ? 'bg-amber-700 text-white shadow-xs'
+                      : 'bg-[#FDFBF7] text-[#555] hover:bg-[#F4EFE6]'
+                  }`}
+                >
+                  🔒 פרטיות לתובל ({privateBlessingsCount})
+                </button>
+              </div>
+
+              <span className="text-xs text-[#7A877C]">
+                מוצגות {filteredBlessings.length} מתוך {blessings.length} ברכות
+              </span>
+            </div>
+
+            {filteredBlessings.length === 0 ? (
               <div className="bg-white rounded-2xl p-12 text-center border border-[#4A5D4E]/20 text-[#7A877C]">
-                עדיין לא נשמרו ברכות במערכת
+                אין ברכות התואמות את הסינון הנבחר
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {blessings.map((blessing) => (
-                  <div
-                    key={blessing.id}
-                    className="bg-white rounded-2xl p-5 border border-[#4A5D4E]/20 shadow-xs flex flex-col justify-between space-y-3"
-                  >
-                    <div className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-base text-[#2C352E]">
-                          {blessing.author_name || 'אורח'}
-                        </span>
-                        <div className="flex items-center gap-2">
-                          <span
-                            className={`text-xs px-2.5 py-0.5 rounded-full font-medium ${
-                              blessing.is_public
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : 'bg-amber-100 text-amber-800'
-                            }`}
-                          >
-                            {blessing.is_public ? '🌐 גלויה לכולם' : '🔒 פרטית לתובל'}
+                {filteredBlessings.map((blessing) => {
+                  const isPublic = Boolean(Number(blessing.is_public));
+                  return (
+                    <div
+                      key={blessing.id}
+                      className="bg-white rounded-2xl p-5 border border-[#4A5D4E]/20 shadow-xs flex flex-col justify-between space-y-3"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-base text-[#2C352E]">
+                            {blessing.author_name || 'אורח'}
                           </span>
-                          <button
-                            onClick={() => handleDeleteBlessing(blessing.id, blessing.author_name)}
-                            title="מחק ברכה"
-                            className="text-rose-600 hover:text-rose-800 p-1 text-sm rounded hover:bg-rose-50"
-                          >
-                            🗑️
-                          </button>
-                        </div>
-                      </div>
-                      <p className="text-sm text-[#3C473E] whitespace-pre-line leading-relaxed bg-[#FDFBF7] p-3.5 rounded-xl border border-[#E8E2D5]">
-                        {blessing.content}
-                      </p>
-                    </div>
+                          <div className="flex items-center gap-2">
+                            {/* Clickable Visibility Toggle Badge */}
+                            <button
+                              type="button"
+                              onClick={() => handleToggleVisibility(blessing.id, blessing.is_public)}
+                              title="לחץ כאן כדי לשנות סטטוס חשיפה (גלויה/פרטית)"
+                              className={`text-xs px-2.5 py-1 rounded-full font-bold cursor-pointer transition-all hover:scale-105 active:scale-95 flex items-center gap-1 ${
+                                isPublic
+                                  ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200'
+                                  : 'bg-amber-100 text-amber-800 hover:bg-amber-200'
+                              }`}
+                            >
+                              {isPublic ? '🌐 גלויה לכולם' : '🔒 פרטית לתובל'}
+                              <span className="text-[10px] opacity-60">⇄ שַׁנֵּה</span>
+                            </button>
 
-                    <div className="text-xs text-[#8A958C] pt-1 border-t border-[#4A5D4E]/10" dir="ltr">
-                      {blessing.created_at
-                        ? new Date(blessing.created_at.includes('Z') ? blessing.created_at : blessing.created_at + 'Z').toLocaleString('en-GB', {
-                            timeZone: 'Asia/Jerusalem',
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            hour12: false,
-                          })
-                        : ''}
+                            <button
+                              onClick={() => handleDeleteBlessing(blessing.id, blessing.author_name)}
+                              title="מחק ברכה"
+                              className="text-rose-600 hover:text-rose-800 p-1 text-sm rounded hover:bg-rose-50"
+                            >
+                              🗑️
+                            </button>
+                          </div>
+                        </div>
+
+                        <p className="text-sm text-[#3C473E] whitespace-pre-line leading-relaxed bg-[#FDFBF7] p-3.5 rounded-xl border border-[#E8E2D5]">
+                          {blessing.content}
+                        </p>
+                      </div>
+
+                      <div className="text-xs text-[#8A958C] pt-1 border-t border-[#4A5D4E]/10 flex items-center justify-between" dir="ltr">
+                        <span>
+                          {blessing.created_at
+                            ? new Date(blessing.created_at.includes('Z') ? blessing.created_at : blessing.created_at + 'Z').toLocaleString('en-GB', {
+                                timeZone: 'Asia/Jerusalem',
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                hour12: false,
+                              })
+                            : ''}
+                        </span>
+                        <span className="text-[11px] opacity-70">ID: {blessing.id}</span>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>

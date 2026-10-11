@@ -130,6 +130,21 @@ app.delete('/api/blessings/:id', async (req, res) => {
   }
 });
 
+app.patch('/api/blessings/:id/visibility', async (req, res) => {
+  try {
+    const { is_public } = req.body;
+    const { id } = req.params;
+    await db.execute({
+      sql: 'UPDATE blessings SET is_public = ? WHERE id = ?',
+      args: [is_public ? 1 : 0, id]
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update blessing visibility' });
+  }
+});
+
 app.post(['/api/generate-blessing', '/api/ai/enhance-blessing'], async (req, res) => {
   try {
     const { text, guestName } = req.body;
