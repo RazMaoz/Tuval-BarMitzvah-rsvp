@@ -49,15 +49,15 @@ export default function Admin() {
         <div className="grid grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-xl border border-[#4A5D4E]/20 shadow-sm flex flex-col items-center">
             <span className="text-5xl font-bold">{totalAdults}</span>
-            <span className="opacity-70 mt-2 font-medium">מבוגרים (12+)</span>
+            <span className="opacity-70 mt-2 font-medium">מבוגרים ונוער (11+)</span>
           </div>
           <div className="bg-white p-6 rounded-xl border border-[#4A5D4E]/20 shadow-sm flex flex-col items-center">
             <span className="text-5xl font-bold">{totalKids}</span>
-            <span className="opacity-70 mt-2 font-medium">ילדים (2-12)</span>
+            <span className="opacity-70 mt-2 font-medium">ילדים (3-11)</span>
           </div>
           <div className="bg-white p-6 rounded-xl border border-[#4A5D4E]/20 shadow-sm flex flex-col items-center">
             <span className="text-5xl font-bold">{totalBabies}</span>
-            <span className="opacity-70 mt-2 font-medium">תינוקות (עד 2)</span>
+            <span className="opacity-70 mt-2 font-medium">תינוקות (עד גיל 3)</span>
           </div>
         </div>
 
@@ -68,9 +68,9 @@ export default function Admin() {
                 <th className="p-4 font-bold">שם האורח</th>
                 <th className="p-4 font-bold">מגיע?</th>
                 <th className="p-4 font-bold">שלב באירוע</th>
-                <th className="p-4 font-bold text-center">מבוגרים</th>
-                <th className="p-4 font-bold text-center">ילדים</th>
-                <th className="p-4 font-bold text-center">תינוקות</th>
+                <th className="p-4 font-bold text-center">מבוגרים ונוער (11+)</th>
+                <th className="p-4 font-bold text-center">ילדים (3-11)</th>
+                <th className="p-4 font-bold text-center">תינוקות (עד גיל 3)</th>
                 <th className="p-4 font-bold">קטגוריה</th>
                 <th className="p-4 font-bold">זמן הרשמה</th>
               </tr>

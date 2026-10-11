@@ -19,10 +19,12 @@ test.describe('RSVP App E2E Tests (Redesigned Flow)', () => {
     await page.click('button:has-text("אגיע בשמחה")');
 
     // Screen 2: Guest Counters
-    await expect(page.locator('h2', { hasText: 'כמה מגיעים לחגוג?' })).toBeVisible();
-    await expect(page.locator('text=מבוגרים (11+)')).toBeVisible();
-    await expect(page.locator('text=ילדים (3-11)')).toBeVisible();
-    await expect(page.locator('text=תינוקות (עד 3)')).toBeVisible();
+    await expect(page.locator('text=מבוגרים ונוער')).toBeVisible();
+    await expect(page.locator('text=(11+)')).toBeVisible();
+    await expect(page.locator('text=ילדים')).toBeVisible();
+    await expect(page.locator('text=(3-11)')).toBeVisible();
+    await expect(page.locator('text=תינוקות')).toBeVisible();
+    await expect(page.locator('text=(עד גיל 3)')).toBeVisible();
 
     // Increase kids by 1
     await page.locator('button:has-text("+")').nth(1).click();

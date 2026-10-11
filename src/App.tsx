@@ -365,11 +365,11 @@ END:VCALENDAR`;
 
               {/* Guest Counters */}
               <div className="space-y-2.5">
-                {/* Adults (11+) */}
+                {/* Adults & Youth (11+) */}
                 <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3 flex items-center justify-between shadow-xs">
                   <div>
-                    <div className="text-base font-bold text-[#2C352E]">מבוגרים (11+)</div>
-                    <div className="text-xs text-[#7A877C]">נוער ומבוגרים</div>
+                    <div className="text-base font-bold text-[#2C352E]">מבוגרים ונוער</div>
+                    <div className="text-xs text-[#7A877C]">(11+)</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -397,8 +397,8 @@ END:VCALENDAR`;
                 {/* Kids (3-11) */}
                 <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3 flex items-center justify-between shadow-xs">
                   <div>
-                    <div className="text-base font-bold text-[#2C352E]">ילדים (3-11)</div>
-                    <div className="text-xs text-[#7A877C]">מנות ילדים</div>
+                    <div className="text-base font-bold text-[#2C352E]">ילדים</div>
+                    <div className="text-xs text-[#7A877C]">(3-11)</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
@@ -423,11 +423,11 @@ END:VCALENDAR`;
                   </div>
                 </div>
 
-                {/* Babies (עד 3) */}
+                {/* Babies (עד גיל 3) */}
                 <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3 flex items-center justify-between shadow-xs">
                   <div>
-                    <div className="text-base font-bold text-[#2C352E]">תינוקות (עד 3)</div>
-                    <div className="text-xs text-[#7A877C]">כיסאות אוכל / עגלות</div>
+                    <div className="text-base font-bold text-[#2C352E]">תינוקות</div>
+                    <div className="text-xs text-[#7A877C]">(עד גיל 3)</div>
                   </div>
                   <div className="flex items-center gap-3">
                     <button
