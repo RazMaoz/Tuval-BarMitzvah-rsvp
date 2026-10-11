@@ -49,16 +49,20 @@ await db.execute(`
 
 app.post('/api/rsvp', async (req, res) => {
   try {
-    const { name, attending, part, babies = 0, children = 0, adults = 0 } = req.body;
+    const { name, attending, part } = req.body;
     
-    // convert yes/no to boolean properly if it comes as string
-    const isAttending = attending === 'yes' ? 1 : 0;
+    // Robust parsing of attending: supports boolean true, 'yes', 'true', 1
+    const isAttending = (attending === true || attending === 'yes' || attending === 'true' || attending === 1) ? 1 : 0;
+    
+    const babiesCount = Number(req.body.babies || 0);
+    const kidsCount = Number(req.body.kids || req.body.children || 0);
+    const adultsCount = Number(req.body.adults || (isAttending ? 1 : 0));
     
     // If not attending, zero out everything
-    const finalPart = isAttending ? (part || '') : null;
-    const finalBabies = isAttending ? babies : 0;
-    const finalKids = isAttending ? children : 0;
-    const finalAdults = isAttending ? adults : 0;
+    const finalPart = isAttending ? (part || 'האירוע המלא') : 'אינו מגיע';
+    const finalBabies = isAttending ? babiesCount : 0;
+    const finalKids = isAttending ? kidsCount : 0;
+    const finalAdults = isAttending ? adultsCount : 0;
     
     await db.execute({
       sql: `INSERT INTO guests (name, attending, event_part, babies, kids, adults) VALUES (?, ?, ?, ?, ?, ?)`,
@@ -85,6 +89,44 @@ app.post('/api/blessings', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.get('/api/blessings', async (req, res) => {
+  try {
+    const result = await db.execute('SELECT * FROM blessings ORDER BY created_at DESC');
+    res.json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+app.delete('/api/guests/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.execute({
+      sql: 'DELETE FROM guests WHERE id = ?',
+      args: [id]
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete guest' });
+  }
+});
+
+app.delete('/api/blessings/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    await db.execute({
+      sql: 'DELETE FROM blessings WHERE id = ?',
+      args: [id]
+    });
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to delete blessing' });
   }
 });
 

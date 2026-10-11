@@ -105,6 +105,7 @@ export default function App() {
           part: 'האירוע המלא',
           adults: formData.adults,
           kids: formData.children,
+          children: formData.children,
           babies: formData.babies,
         }),
       });
