@@ -50,13 +50,17 @@ await db.execute(`
 app.post('/api/rsvp', async (req, res) => {
   try {
     const { name, attending, part } = req.body;
+    const trimmedName = (name || '').trim();
+    if (!trimmedName) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
     
-    // Robust parsing of attending: supports boolean true, 'yes', 'true', 1
-    const isAttending = (attending === true || attending === 'yes' || attending === 'true' || attending === 1) ? 1 : 0;
+    // Robust parsing of attending: supports boolean true, 'yes', 'true', 1, '1'
+    const isAttending = (attending === true || attending === 'yes' || attending === 'true' || attending === 1 || attending === '1') ? 1 : 0;
     
-    const babiesCount = Number(req.body.babies || 0);
-    const kidsCount = Number(req.body.kids || req.body.children || 0);
-    const adultsCount = Number(req.body.adults || (isAttending ? 1 : 0));
+    const babiesCount = Math.max(0, Math.min(50, Math.floor(Number(req.body.babies) || 0)));
+    const kidsCount = Math.max(0, Math.min(50, Math.floor(Number(req.body.kids || req.body.children) || 0)));
+    const adultsCount = Math.max(isAttending ? 1 : 0, Math.min(50, Math.floor(Number(req.body.adults) || (isAttending ? 1 : 0))));
     
     // If not attending, zero out everything
     const finalPart = isAttending ? (part || 'האירוע המלא') : 'אינו מגיע';
@@ -66,7 +70,7 @@ app.post('/api/rsvp', async (req, res) => {
     
     await db.execute({
       sql: `INSERT INTO guests (name, attending, event_part, babies, kids, adults) VALUES (?, ?, ?, ?, ?, ?)`,
-      args: [name, isAttending, finalPart, finalBabies, finalKids, finalAdults]
+      args: [trimmedName, isAttending, finalPart, finalBabies, finalKids, finalAdults]
     });
     
     res.json({ success: true });
@@ -79,10 +83,18 @@ app.post('/api/rsvp', async (req, res) => {
 app.post('/api/blessings', async (req, res) => {
   try {
     const { author_name, content, is_public } = req.body;
+    const trimmedAuthor = (author_name || '').trim() || 'אורח';
+    const trimmedContent = (content || '').trim();
+    
+    if (!trimmedContent) {
+      return res.status(400).json({ error: 'Content is required' });
+    }
+    
+    const isPublic = (is_public === true || is_public === 1 || is_public === '1' || is_public === 'true') ? 1 : 0;
     
     await db.execute({
       sql: `INSERT INTO blessings (author_name, content, is_public) VALUES (?, ?, ?)`,
-      args: [author_name, content, is_public ? 1 : 0]
+      args: [trimmedAuthor, trimmedContent, isPublic]
     });
     
     res.json({ success: true });
@@ -104,7 +116,10 @@ app.get('/api/blessings', async (req, res) => {
 
 app.delete('/api/guests/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (!id || id <= 0) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
     await db.execute({
       sql: 'DELETE FROM guests WHERE id = ?',
       args: [id]
@@ -118,7 +133,10 @@ app.delete('/api/guests/:id', async (req, res) => {
 
 app.delete('/api/blessings/:id', async (req, res) => {
   try {
-    const { id } = req.params;
+    const id = parseInt(req.params.id, 10);
+    if (!id || id <= 0) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
     await db.execute({
       sql: 'DELETE FROM blessings WHERE id = ?',
       args: [id]
@@ -132,11 +150,15 @@ app.delete('/api/blessings/:id', async (req, res) => {
 
 app.patch('/api/blessings/:id/visibility', async (req, res) => {
   try {
+    const id = parseInt(req.params.id, 10);
+    if (!id || id <= 0) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
     const { is_public } = req.body;
-    const { id } = req.params;
+    const isPublic = (is_public === true || is_public === 1 || is_public === '1' || is_public === 'true') ? 1 : 0;
     await db.execute({
       sql: 'UPDATE blessings SET is_public = ? WHERE id = ?',
-      args: [is_public ? 1 : 0, id]
+      args: [isPublic, id]
     });
     res.json({ success: true });
   } catch (err) {
@@ -211,11 +233,14 @@ app.get('/api/guests', async (req, res) => {
 
 app.patch('/api/guests/:id/category', async (req, res) => {
   try {
+    const id = parseInt(req.params.id, 10);
+    if (!id || id <= 0) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
     const { category } = req.body;
-    const { id } = req.params;
     await db.execute({
       sql: 'UPDATE guests SET category = ? WHERE id = ?',
-      args: [category, id]
+      args: [category || '', id]
     });
     res.json({ success: true });
   } catch (err) {
@@ -230,10 +255,10 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.use(express.static(path.join(__dirname, 'dist')));
+app.use(express.static(path.join(__dirname, 'dist'), { dotfiles: 'allow' }));
 
 app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'));
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'), { dotfiles: 'allow' });
 });
 
 app.listen(port, () => {

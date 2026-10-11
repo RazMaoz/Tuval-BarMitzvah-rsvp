@@ -28,12 +28,22 @@ export default function App() {
     setStep(newStep);
   };
 
-  const [formData, setFormData] = useState({
-    name: '',
-    adults: 1,
-    children: 0,
-    babies: 0,
+  const [formData, setFormData] = useState(() => {
+    const savedName = typeof window !== 'undefined' ? sessionStorage.getItem('rsvp_name') || '' : '';
+    return {
+      name: savedName,
+      adults: 1,
+      children: 0,
+      babies: 0,
+    };
   });
+
+  // Defense against page refresh on mid-step without a name
+  useEffect(() => {
+    if (step !== 1 && !formData.name.trim()) {
+      goToStep(1);
+    }
+  }, [step, formData.name]);
 
   const [nameError, setNameError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -93,6 +103,10 @@ export default function App() {
 
   // Submit attending RSVP & Blessing
   const handleFinalSubmit = async () => {
+    if (!validateName()) {
+      goToStep(1);
+      return;
+    }
     setIsSubmitting(true);
     setSubmitError('');
     try {
@@ -265,7 +279,7 @@ END:VCALENDAR`;
 
       {/* Main Container - Zero Scroll Guaranteed */}
       <main
-        className={`flex-1 max-w-md w-full mx-auto px-3.5 py-2 flex flex-col justify-between ${
+        className={`flex-1 min-h-0 max-w-md w-full mx-auto px-3.5 py-2 flex flex-col justify-between ${
           step === 1 ? 'overflow-hidden' : 'overflow-y-auto'
         }`}
       >
@@ -320,7 +334,7 @@ END:VCALENDAR`;
                   type="text"
                   value={formData.name}
                   onChange={(e) => {
-                    setFormData((prev) => ({ ...prev, name: e.target.value }));
+                    const val = e.target.value; sessionStorage.setItem('rsvp_name', val); setFormData((prev) => ({ ...prev, name: val }));
                     if (nameError) setNameError('');
                   }}
                   placeholder="שם מלא: שם פרטי + שם משפחה"
@@ -357,7 +371,7 @@ END:VCALENDAR`;
 
         {/* ================= SCREEN 2: ATTENDING (GUEST COUNTS ONLY) ================= */}
         {step === 2 && (
-          <div className="flex-1 flex flex-col justify-between h-full space-y-3">
+          <div className="flex-1 flex flex-col justify-between min-h-full space-y-3">
             <div className="space-y-3">
               <div className="text-center pt-1">
                 <h2 className="text-lg font-bold text-[#2C352E]">כמה מגיעים לחגוג?</h2>
@@ -477,7 +491,7 @@ END:VCALENDAR`;
 
         {/* ================= SCREEN 3: ATTENDING (BLESSING & SUBMIT) ================= */}
         {step === 3 && (
-          <div className="flex-1 flex flex-col justify-between h-full space-y-3">
+          <div className="flex-1 flex flex-col justify-between min-h-full space-y-3">
             <div className="space-y-3">
               {/* Summary Badge */}
               <div className="bg-white border border-[#E8E2D5] rounded-xl px-4 py-2.5 text-sm flex justify-between items-center text-[#526054] shadow-xs">
@@ -645,7 +659,7 @@ END:VCALENDAR`;
 
         {/* ================= SCREEN 4: SUCCESS & WAZE ================= */}
         {step === 4 && (
-          <div className="flex-1 flex flex-col justify-between text-center space-y-3 pt-1 h-full">
+          <div className="flex-1 flex flex-col justify-between text-center space-y-3 pt-1 min-h-full">
             <div className="space-y-3">
               {/* Tuval Portrait with Checkmark */}
               <div className="relative w-20 h-20 mx-auto">
@@ -768,7 +782,7 @@ END:VCALENDAR`;
 
         {/* ================= SCREEN 2 (DECLINE): THANK YOU & BLESSING ================= */}
         {step === 'decline' && (
-          <div className="flex-1 flex flex-col justify-between text-center space-y-3 pt-1 h-full">
+          <div className="flex-1 flex flex-col justify-between text-center space-y-3 pt-1 min-h-full">
             <div className="space-y-3">
               {/* Tuval Portrait */}
               <div className="w-16 h-16 mx-auto rounded-full overflow-hidden border-2 border-[#4A5D4E] shadow-sm">

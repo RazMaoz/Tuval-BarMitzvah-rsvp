@@ -350,7 +350,7 @@ export default function Admin() {
                           </div>
                         </div>
 
-                        <p className="text-sm text-[#3C473E] whitespace-pre-line leading-relaxed bg-[#FDFBF7] p-3.5 rounded-xl border border-[#E8E2D5]">
+                        <p className="text-sm text-[#3C473E] whitespace-pre-line leading-relaxed bg-[#FDFBF7] p-3.5 rounded-xl border border-[#E8E2D5] break-words">
                           {blessing.content}
                         </p>
                       </div>
