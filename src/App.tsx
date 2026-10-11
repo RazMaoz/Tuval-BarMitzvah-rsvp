@@ -243,7 +243,7 @@ END:VCALENDAR`;
 
   return (
     <div
-      className="min-h-[100dvh] h-[100dvh] bg-[#FDFBF7] text-[#2C352E] flex flex-col justify-between overflow-hidden"
+      className="rsvp-app min-h-[100dvh] h-[100dvh] bg-[#FDFBF7] text-[#2C352E] flex flex-col justify-between overflow-hidden"
       dir="rtl"
     >
       {/* Universal Header with Symmetric Laurel Branches */}

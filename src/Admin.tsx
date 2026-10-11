@@ -111,7 +111,7 @@ export default function Admin() {
   });
 
   return (
-    <div dir="rtl" className="min-h-screen bg-[#FDFBF7] p-4 sm:p-8 text-[#4A5D4E] font-sans">
+    <div dir="rtl" className="min-h-screen w-full overflow-y-auto bg-[#FDFBF7] p-4 sm:p-8 text-[#4A5D4E] font-sans">
       <div className="max-w-6xl mx-auto space-y-6">
         
         {/* Header */}
