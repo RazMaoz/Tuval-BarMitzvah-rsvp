@@ -1,204 +1,217 @@
 import { useState, useEffect } from 'react';
-import { MapPin, PartyPopper, Heart, Send, Calendar, MessageSquareHeart, Wand2, Undo2, Redo2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Wand2, Undo2, Redo2, Check } from 'lucide-react';
 
-function App() {
-  const [step, setStep] = useState(() => {
-    return window.history.state?.step || 0;
-  }); // Wizard step
-  
+type StepType = 1 | 2 | 3 | 4 | 'decline';
+
+export default function App() {
+  const [step, setStep] = useState<StepType>(() => {
+    return (window.history.state?.step as StepType) || 1;
+  });
+
   useEffect(() => {
     if (window.history.state?.step === undefined) {
-      window.history.replaceState({ step: 0 }, '');
+      window.history.replaceState({ step: 1 }, '');
     }
     const handlePopState = (event: PopStateEvent) => {
       if (event.state && event.state.step !== undefined) {
         setStep(event.state.step);
       } else {
-        setStep(0);
+        setStep(1);
       }
     };
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  const goToStep = (newStep: number) => {
+  const goToStep = (newStep: StepType) => {
     window.history.pushState({ step: newStep }, '');
     setStep(newStep);
   };
 
   const [formData, setFormData] = useState({
     name: '',
-    attending: '',
-    part: 'שניהם',
-    babies: 0,
-    children: 0,
     adults: 1,
+    children: 0,
+    babies: 0,
   });
-  const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [errorMessage, setErrorMessage] = useState('');
-  
-  const [blessingData, setBlessingData] = useState({ content: '', isPublic: true });
-  const [blessingStatus, setBlessingStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
-  const [showBlessingForm, setShowBlessingForm] = useState(false);
+
+  const [nameError, setNameError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
+
+  // Blessing state
+  const [blessingData, setBlessingData] = useState({
+    content: '',
+    isPublic: true,
+  });
+  const [blessingSubmitted, setBlessingSubmitted] = useState(false);
   const [isAILoading, setIsAILoading] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: type === 'number' ? Number(value) : value,
-    }));
-  };
-
-  const handleNext = () => {
-    if (step === 1 && !formData.name.trim()) return;
-    if (step === 2 && !formData.attending) return;
-    if (step === 2 && formData.attending === 'no') {
-      goToStep(5);
-      return;
+  // Validation
+  const validateName = () => {
+    if (!formData.name.trim()) {
+      setNameError('נא להזין שם מלא כדי להמשיך');
+      return false;
     }
-    goToStep(step + 1);
+    setNameError('');
+    return true;
   };
 
-  const handlePrev = () => {
-    window.history.back();
+  // Handle Attending decision from Screen 1
+  const handleSelectAttending = () => {
+    if (!validateName()) return;
+    goToStep(2);
   };
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    setErrorMessage('');
-    
-    if (formData.attending === 'yes') {
-      if (formData.adults === 0) {
-        setErrorMessage('אנא ודאו שסימנתם לפחות מבוגר אחד.');
-        return;
-      }
-    }
-    
-    setStatus('submitting');
+  // Handle Decline decision from Screen 1
+  const handleSelectDecline = async () => {
+    if (!validateName()) return;
+    setIsSubmitting(true);
+    setSubmitError('');
     try {
-      const response = await fetch('/api/rsvp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-      
-      if (response.ok) {
-        setStatus('success');
-      } else {
-        setStatus('error');
-      }
-    } catch (err) {
-      console.error(err);
-      setStatus('error');
-    }
-  };
-
-  const handleBlessingSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setBlessingStatus('submitting');
-    try {
-      const response = await fetch('/api/blessings', {
+      await fetch('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          author_name: formData.name || 'אורח',
-          content: blessingData.content,
-          is_public: blessingData.isPublic
+          name: formData.name.trim(),
+          attending: false,
+          part: 'אינו מגיע',
+          adults: 0,
+          kids: 0,
+          babies: 0,
         }),
       });
-      if (response.ok) {
-        setBlessingStatus('success');
-      } else {
-        setBlessingStatus('error');
-      }
-    } catch (err) {
-      console.error(err);
-      setBlessingStatus('error');
+      goToStep('decline');
+    } catch {
+      goToStep('decline');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
+  // Submit attending RSVP & Blessing
+  const handleFinalSubmit = async () => {
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      const res = await fetch('/api/rsvp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          attending: true,
+          part: 'האירוע המלא',
+          adults: formData.adults,
+          kids: formData.children,
+          babies: formData.babies,
+        }),
+      });
+
+      if (!res.ok) throw new Error('שגיאה בשמירת הנתונים');
+
+      // Submit blessing if entered
+      if (blessingData.content.trim()) {
+        await fetch('/api/blessings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            author_name: formData.name.trim(),
+            content: blessingData.content.trim(),
+            is_public: blessingData.isPublic,
+          }),
+        });
+      }
+
+      goToStep(4);
+    } catch (err: any) {
+      setSubmitError(err.message || 'אירעה שגיאה. אנא נסה שנית.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Submit blessing from decline screen
+  const handleDeclineBlessingSubmit = async () => {
+    if (!blessingData.content.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await fetch('/api/blessings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          author_name: formData.name.trim() || 'אורח',
+          content: blessingData.content.trim(),
+          is_public: blessingData.isPublic,
+        }),
+      });
+      setBlessingSubmitted(true);
+    } catch {
+      setBlessingSubmitted(true);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // AI Blessing enhancement / generator
   const handleAIEnhance = async () => {
-    const textLen = blessingData.content.trim().length;
-    if (textLen > 0 && textLen < 10) {
-      alert("אם התחלתם לכתוב, אנא כתבו לפחות 10 תווים (כמה מילים) כדי שהבינה המלאכותית תוכל להבין את כוונתכם ולשדרג את הברכה, או השאירו ריק כדי שנייצר ברכה מאפס.");
+    const textToEnhance = blessingData.content.trim();
+    if (textToEnhance.length > 0 && textToEnhance.length < 10) {
+      alert('נא להזין לפחות 10 תווים לשדרוג, או להשאיר ריק לחלוטין כדי ליצור ברכה חדשה מאפס');
       return;
     }
+
     setIsAILoading(true);
     try {
-      const response = await fetch('/api/generate-blessing', {
+      const response = await fetch('/api/ai/enhance-blessing', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: blessingData.content,
-          guestName: formData.name
+          text: textToEnhance,
+          guestName: formData.name.trim(),
         }),
       });
-      if (response.ok) {
-        const data = await response.json();
-        if (data.result) {
-          let newHist = [...history];
-          let currIdx = historyIndex;
-          if (currIdx === -1 || newHist[currIdx] !== blessingData.content) {
-            newHist = newHist.slice(0, currIdx + 1);
-            newHist.push(blessingData.content);
-            currIdx = newHist.length - 1;
-          }
-          newHist.push(data.result);
-          setHistory(newHist);
-          setHistoryIndex(newHist.length - 1);
-          setBlessingData(prev => ({ ...prev, content: data.result }));
-        }
+      const data = await response.json();
+      if (data.enhancedText) {
+        setHistory((prev) => [...prev.slice(0, historyIndex + 1), blessingData.content]);
+        setHistoryIndex((prev) => prev + 1);
+        setBlessingData((prev) => ({ ...prev, content: data.enhancedText }));
       } else {
-        alert("מערכת השדרוג עמוסה כרגע. תוכלו לנסות שוב בעוד מספר דקות, או לשלוח את הברכה המקורית כפי שהיא.");
+        throw new Error();
       }
-    } catch (err) {
-      console.error("AI Generation failed", err);
-      alert("מערכת השדרוג עמוסה כרגע. תוכלו לנסות שוב בעוד מספר דקות, או לשלוח את הברכה המקורית כפי שהיא.");
+    } catch {
+      alert('מערכת השדרוג עמוסה כרגע. הברכה שלך נשמרה כפי שהיא, וניתן להמשיך בשליחה!');
     } finally {
       setIsAILoading(false);
     }
   };
 
   const handleUndo = () => {
-    let newHist = [...history];
-    let currIdx = historyIndex;
-    
-    if (currIdx === -1 || newHist[currIdx] !== blessingData.content) {
-      newHist = newHist.slice(0, currIdx + 1);
-      newHist.push(blessingData.content);
-      currIdx = newHist.length - 1;
-      setHistory(newHist);
-    }
-    
-    if (currIdx > 0) {
-      const prevIdx = currIdx - 1;
-      setHistoryIndex(prevIdx);
-      setBlessingData(prev => ({ ...prev, content: newHist[prevIdx] }));
+    if (historyIndex >= 0) {
+      setBlessingData((prev) => ({ ...prev, content: history[historyIndex] }));
+      setHistoryIndex((prev) => prev - 1);
     }
   };
 
   const handleRedo = () => {
-    if (historyIndex >= 0 && historyIndex < history.length - 1) {
-      const nextIdx = historyIndex + 1;
-      setHistoryIndex(nextIdx);
-      setBlessingData(prev => ({ ...prev, content: history[nextIdx] }));
+    if (historyIndex < history.length - 1) {
+      const nextIndex = historyIndex + 1;
+      setBlessingData((prev) => ({ ...prev, content: history[nextIndex] }));
+      setHistoryIndex(nextIndex);
     }
   };
 
-  const handleDownloadIcs = () => {
+  // Calendar helpers
+  const downloadIcs = () => {
     const icsContent = `BEGIN:VCALENDAR
 VERSION:2.0
 BEGIN:VEVENT
-SUMMARY:בר המצווה של תובל
+SUMMARY:בר־המצווה של תובל
 DTSTART:20261110T140000Z
-DTEND:20261110T170000Z
+DTEND:20261110T190000Z
 LOCATION:West Garden, רחוב ויצמן 273, רעננה
-DESCRIPTION:\u202Bאיזה כיף\\, נשמח לראותכם!\\nהאירוע יכלול טקס עלייה לתורה (מתחילים ב־16:00)\\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה\\, רעננה"\\n(מדובר בחנייה עירונית בתשלום)\\n\\nרחל\\, רז ותובל\u202C
+DESCRIPTION:איזה כיף, נתראה בשמחה!\\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\\nרחל, רז ותובל מעוז
 END:VEVENT
 END:VCALENDAR`;
     const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
@@ -211,325 +224,716 @@ END:VCALENDAR`;
     document.body.removeChild(link);
   };
 
-  const calendarDesc = '\u202Bאיזה כיף, נשמח לראותכם!\nהאירוע יכלול טקס עלייה לתורה (מתחילים ב־16:00)\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\n(מדובר בחנייה עירונית בתשלום)\n\nרחל, רז ותובל\u202C';
-  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent('בר המצווה של תובל')}&dates=20261110T140000Z/20261110T170000Z&details=${encodeURIComponent(calendarDesc)}&location=${encodeURIComponent('West Garden, ויצמן 273, רעננה')}`;
+  const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
+    'בר־המצווה של תובל'
+  )}&dates=20261110T140000Z/20261110T190000Z&details=${encodeURIComponent(
+    'איזה כיף, נתראה בשמחה!\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\nרחל, רז ותובל מעוז'
+  )}&location=${encodeURIComponent('West Garden, ויצמן 273, רעננה')}`;
 
-  const renderBlessingSection = (isAttending = true) => (
-    <>
-      {!showBlessingForm && blessingStatus === 'idle' && (
-        <div className="mt-8 animate-in fade-in slide-in-from-bottom-2">
-          {!isAttending && (
-            <div className="text-[#4A5D4E] font-medium text-md mb-3 bg-[#FDFBF7] p-3 rounded-lg border border-[#4A5D4E]/10">
-              בכל מקרה, נשמח לקבל ברכה קטנה לתובל. אפשר להשאיר אותה ממש כאן:
-            </div>
-          )}
-          <button 
-            onClick={() => setShowBlessingForm(true)}
-            className={`flex items-center justify-center gap-2 w-full px-6 py-4 rounded-xl font-bold transition-all shadow-sm ${!isAttending ? 'bg-[#4A5D4E] text-white hover:bg-[#3A4A3E]' : 'bg-[#FDFBF7] text-[#4A5D4E] border border-[#4A5D4E]/30 hover:bg-[#4A5D4E]/5'}`}
-          >
-            <MessageSquareHeart className="w-5 h-5" />
-            {isAttending ? 'השארת ברכה לתובל' : 'כתיבת ברכה לתובל ✍️'}
-          </button>
-        </div>
-      )}
-
-      {showBlessingForm && blessingStatus !== 'success' && (
-        <form onSubmit={handleBlessingSubmit} className="bg-[#FDFBF7] p-5 rounded-xl border border-[#4A5D4E]/10 space-y-4 mt-6 text-right animate-in fade-in slide-in-from-top-4">
-          <div className="font-bold text-lg text-center flex items-center justify-center gap-2">
-            <MessageSquareHeart className="w-5 h-5" />
-            כתבו ברכה לתובל
-          </div>
-          <textarea
-            required
-            minLength={10}
-            value={blessingData.content}
-            onChange={(e) => setBlessingData(prev => ({ ...prev, content: e.target.value }))}
-            className="w-full bg-white border border-[#4A5D4E]/30 rounded-lg p-3 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] resize-none"
-            placeholder="מזל טוב תובל!..."
-          />
-          
-          <div className="flex items-center gap-2 mt-1">
-            <button
-              type="button"
-              onClick={handleUndo}
-              disabled={historyIndex <= 0 && (history.length === 0 || blessingData.content === history[0])}
-              className="p-2 bg-white text-[#4A5D4E] border border-[#4A5D4E]/30 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-30 flex-shrink-0"
-              title="חזור אחורה"
-            >
-              <Undo2 className="w-4 h-4" />
-            </button>
-
-            <button
-              type="button"
-              onClick={handleAIEnhance}
-              disabled={isAILoading}
-              className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#4A5D4E] to-[#6A7D6E] text-white py-2 rounded-lg text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-70"
-            >
-              <Wand2 className={`w-4 h-4 ${isAILoading ? 'animate-spin' : ''}`} />
-              {isAILoading ? 'הקסם קורה...' : (blessingData.content.trim() ? 'שדרוג הברכה בעזרת AI' : 'כתוב לי ברכה בעזרת AI')}
-            </button>
-
-            <button
-              type="button"
-              onClick={handleRedo}
-              disabled={historyIndex >= history.length - 1 || history.length === 0}
-              className="p-2 bg-white text-[#4A5D4E] border border-[#4A5D4E]/30 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-30 flex-shrink-0"
-              title="בצע שוב"
-            >
-              <Redo2 className="w-4 h-4" />
-            </button>
-          </div>
-          <div className="space-y-3">
-            <div className="text-sm font-semibold">מי יכול לראות את הברכה?</div>
-            <label className="flex items-center gap-3 cursor-pointer text-sm">
-              <input 
-                type="radio" 
-                name="visibility" 
-                checked={blessingData.isPublic} 
-                onChange={() => setBlessingData(prev => ({ ...prev, isPublic: true }))}
-                className="accent-[#4A5D4E] w-4 h-4"
-              />
-              גלוי לכולם באתר
-            </label>
-            <label className="flex items-center gap-3 cursor-pointer text-sm">
-              <input 
-                type="radio" 
-                name="visibility" 
-                checked={!blessingData.isPublic} 
-                onChange={() => setBlessingData(prev => ({ ...prev, isPublic: false }))}
-                className="accent-[#4A5D4E] w-4 h-4"
-              />
-              פרטי
-            </label>
-          </div>
-          <button
-            type="submit"
-            disabled={blessingStatus === 'submitting'}
-            className="w-full bg-[#4A5D4E] text-white py-3 rounded-lg font-medium hover:bg-[#3A4A3E] transition-colors disabled:opacity-70 mt-2"
-          >
-            {blessingStatus === 'submitting' ? 'שולח...' : 'שליחת ברכה'}
-          </button>
-        </form>
-      )}
-
-      {blessingStatus === 'success' && (
-        <div className="bg-[#4A5D4E]/10 text-[#4A5D4E] p-4 rounded-xl mt-6 font-medium animate-in zoom-in duration-300">
-          הברכה נשלחה בהצלחה! תודה רבה 💖
-        </div>
-      )}
-    </>
+  // Waze icon SVG
+  const WazeIcon = () => (
+    <svg className="w-4 h-4 fill-white flex-shrink-0" viewBox="0 0 24 24">
+      <path d="M13.218 0C9.915 0 6.835 1.49 4.723 4.148c-1.515 1.913-2.31 4.272-2.31 6.706v1.739c0 .894-.62 1.738-1.862 1.813-.298.025-.547.224-.547.522-.05.82.82 2.31 2.012 3.502.82.844 1.788 1.515 2.832 2.036a3 3 0 0 0 2.955 3.528 2.966 2.966 0 0 0 2.931-2.385h2.509c.323 1.689 2.086 2.856 3.974 2.21 1.64-.546 2.36-2.409 1.763-3.924a12.84 12.84 0 0 0 1.838-1.465 10.73 10.73 0 0 0 3.18-7.65c0-2.882-1.118-5.589-3.155-7.625A10.899 10.899 0 0 0 13.218 0zm0 1.217c2.558 0 4.967.994 6.78 2.807a9.525 9.525 0 0 1 2.807 6.78A9.526 9.526 0 0 1 20 17.585a9.647 9.647 0 0 1-6.78 2.807h-2.46a3.008 3.008 0 0 0-2.93-2.41 3.03 3.03 0 0 0-2.534 1.367v.024a8.945 8.945 0 0 1-2.41-1.788c-.844-.844-1.316-1.614-1.515-2.11a2.858 2.858 0 0 0 1.441-.846 2.959 2.959 0 0 0 .795-2.036v-1.789c0-2.11.696-4.197 2.012-5.861 1.863-2.385 4.62-3.726 7.6-3.726zm-2.41 5.986a1.192 1.192 0 0 0-1.191 1.192 1.192 1.192 0 0 0 1.192 1.193A1.192 1.192 0 0 0 12 8.395a1.192 1.192 0 0 0-1.192-1.192zm7.204 0a1.192 1.192 0 0 0-1.192 1.192 1.192 1.192 0 0 0 1.192 1.193 1.192 1.192 0 0 0 1.192-1.193 1.192 1.192 0 0 0-1.192-1.192zm-7.377 4.769a.596.596 0 0 0-.546.845 4.813 4.813 0 0 0 4.346 2.757 4.77 4.77 0 0 0 4.347-2.757.596.596 0 0 0-.547-.845h-.025a.561.561 0 0 0-.521.348 3.59 3.59 0 0 1-3.254 2.061 3.591 3.591 0 0 1-3.254-2.061.64.64 0 0 0-.546-.348z" />
+    </svg>
   );
 
-  if (status === 'success') {
-    if (formData.attending === 'no') {
-      return (
-        <div dir="rtl" className="h-[100dvh] bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
-          <div className="max-w-md w-full bg-white rounded-2xl shadow-xl p-6 border border-[#4A5D4E]/20 text-center flex flex-col justify-center">
-            <Heart className="w-12 h-12 mx-auto text-[#4A5D4E] mb-4" />
-            <h1 className="text-2xl font-bold mb-2">תודה רבה!</h1>
-            <p className="text-md mb-6">חבל שלא תוכלו להגיע. להתראות בשמחות אחרות!</p>
-            {renderBlessingSection(false)}
-          </div>
-        </div>
-      );
-    }
-    return (
-      <div dir="rtl" className="h-[100dvh] bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
-        <div className="max-w-md w-full h-[90dvh] overflow-y-auto bg-white rounded-2xl shadow-xl p-6 sm:p-8 border border-[#4A5D4E]/20 text-center">
-          <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E] mb-4" />
-          <h1 className="text-3xl font-bold mb-2">איזה כיף שאתם באים!</h1>
-          <p className="text-lg">התשובה התקבלה בהצלחה.</p>
-          
-          <div className="bg-[#FDFBF7] p-4 rounded-xl space-y-4 mt-6 border border-[#4A5D4E]/10 text-right">
-            <div className="flex items-center gap-2 font-semibold text-lg text-center justify-center">
-              <MapPin className="w-5 h-5" />
-              <span>הגעה וחניה</span>
-            </div>
-            <p className="text-md font-medium text-center">
-              "תחנת דלק מעייני שמחה, רעננה"
-            </p>
-            
-            <div className="space-y-3 pt-2">
-              <a 
-                href="https://waze.com/ul?q=%D7%AA%D7%97%D7%A0%D7%AA+%D7%93%D7%9C%D7%A7+%D7%9E%D7%A2%D7%99%D7%99%D7%A0%D7%99+%D7%A9%D7%9E%D7%97%D7%94,+%D7%A8%D7%A2%D7%A0%D7%A0%D7%94" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 bg-[#4A5D4E] text-white px-4 py-3 rounded-xl font-medium hover:bg-[#3A4A3E]"
-              >
-                <MapPin className="w-5 h-5" /> ניווט ב-Waze
-              </a>
-              <a 
-                href={googleCalendarUrl} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border border-[#4A5D4E] px-4 py-3 rounded-xl font-medium"
-              >
-                <Calendar className="w-5 h-5" /> יומן Google
-              </a>
-              <button 
-                onClick={handleDownloadIcs}
-                className="flex items-center justify-center gap-2 bg-white text-[#4A5D4E] border border-[#4A5D4E]/50 px-4 py-3 rounded-xl font-medium w-full"
-              >
-                <Calendar className="w-5 h-5" /> הוספה ליומנים אחרים
-              </button>
-            </div>
-          </div>
-          {renderBlessingSection(true)}
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div dir="rtl" className="h-[100dvh] bg-[#FDFBF7] text-[#4A5D4E] flex flex-col items-center justify-center p-4 font-sans overflow-hidden">
-      <div className="max-w-md w-full bg-white rounded-3xl shadow-xl overflow-hidden border border-[#4A5D4E]/10 flex flex-col max-h-[90dvh]">
-        <div className="bg-[#4A5D4E] text-white text-center py-6 px-6 shrink-0">
-          <h1 className="text-2xl font-bold tracking-wide">בר מצווה לתוּבַל</h1>
-          <div className="flex items-center justify-center gap-1 mt-2">
-            {[0,1,2,3,4,5].map(i => (
-              <div key={i} className={`h-1.5 rounded-full transition-all ${i <= step ? 'w-4 bg-white' : 'w-2 bg-white/30'}`} />
-            ))}
-          </div>
+    <div className="min-h-screen bg-[#FDFBF7] text-[#2C352E] flex flex-col justify-between" dir="rtl">
+      {/* Universal Header with Symmetric Laurel Branches */}
+      <header className="bg-[#4A5D4E] text-white py-3.5 px-6 text-center relative shadow-sm">
+        <div className="flex items-center justify-center gap-2.5">
+          <img
+            src="/laurel_branch.png"
+            alt="ענף דפנה"
+            className="h-7 w-auto object-contain opacity-95 transform -rotate-6"
+          />
+          <h1 className="text-lg font-bold tracking-wide text-white">בר־המצווה של תובל</h1>
+          <img
+            src="/laurel_branch.png"
+            alt="ענף דפנה"
+            className="h-7 w-auto object-contain opacity-95 transform scale-x-[-1] rotate-6"
+          />
         </div>
-        
-        <div className="p-6 flex-1 overflow-y-auto">
-          {step === 0 && (
-            <div className="text-center space-y-6 animate-in slide-in-from-left-4">
-              <PartyPopper className="w-16 h-16 mx-auto text-[#4A5D4E]/80" />
-              <h2 className="text-2xl font-bold">איזה כיף, נשמח לראותכם!</h2>
-              <p className="text-lg opacity-90">האירוע יתקיים ב-10.11.2026<br/>ב-West Garden, רעננה</p>
-              <button onClick={handleNext} className="mt-8 w-full bg-[#4A5D4E] text-white py-4 rounded-xl font-bold text-lg hover:bg-[#3A4A3E]">
-                בואו נתחיל
+      </header>
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-md w-full mx-auto p-5 flex flex-col justify-between">
+        {/* ================= SCREEN 1: COMBINED LANDING ================= */}
+        {step === 1 && (
+          <div className="flex-1 flex flex-col justify-between space-y-4">
+            <div className="space-y-3.5">
+              {/* Tuval Hero Avatar & Quote */}
+              <div className="flex flex-col items-center gap-2 pt-1">
+                <img
+                  src="/tuval_portrait_color.jpg"
+                  alt="תובל"
+                  className="w-16 h-16 rounded-full object-cover border-2 border-[#4A5D4E]/40 shadow-xs"
+                />
+                <div className="w-full bg-[#F4EFE6] border border-[#E5DECF] rounded-2xl p-3 text-center shadow-xs">
+                  <p className="text-xs font-medium text-[#3E4A40] italic leading-relaxed">
+                    "עוד נפגש ויהיה לנו טוב, זה יהיה בקרוב..."
+                  </p>
+                </div>
+              </div>
+
+              {/* Event Details Card */}
+              <div className="bg-white border border-[#EBE6DC] rounded-2xl p-3.5 space-y-2 shadow-xs text-xs text-[#526054]">
+                <div className="flex items-center gap-2 text-[#3E4A40]">
+                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                  <span>
+                    <strong>מועד:</strong> יום שלישי, 10/11/2026, שעה 16:00
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[#3E4A40]">
+                  <svg
+                    className="w-4 h-4 text-[#4A5D4E] flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span>
+                    <strong>מיקום:</strong> West Garden, רעננה
+                  </span>
+                </div>
+                <div className="pt-2 border-t border-[#F0EBE1] text-center text-[#3E4A40] font-medium leading-relaxed">
+                  נשמח לראותך בשמחתנו,
+                  <br />
+                  <span className="font-bold text-[#2C352E]">רחל, רז ותובל מעוז</span>
+                </div>
+              </div>
+
+              {/* Input Field: איך קוראים לך? */}
+              <div className="space-y-1 pt-1">
+                <label className="block text-xs font-bold text-[#3E4A40]">איך קוראים לך?</label>
+                <input
+                  type="text"
+                  value={formData.name}
+                  onChange={(e) => {
+                    setFormData((prev) => ({ ...prev, name: e.target.value }));
+                    if (nameError) setNameError('');
+                  }}
+                  placeholder="שם מלא: שם פרטי + שם משפחה"
+                  className={`w-full px-3.5 py-2.5 text-sm rounded-xl border bg-white focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] placeholder-[#9E9689] ${
+                    nameError ? 'border-red-400 bg-red-50/20' : 'border-[#D5CFC3]'
+                  }`}
+                />
+                {nameError && <p className="text-xs text-red-500 font-medium pt-0.5">{nameError}</p>}
+              </div>
+            </div>
+
+            {/* Decision Buttons */}
+            <div className="space-y-2 pt-2">
+              <button
+                type="button"
+                onClick={handleSelectAttending}
+                className="w-full py-3 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-[0.98] text-center"
+              >
+                אגיע בשמחה
+              </button>
+              <button
+                type="button"
+                onClick={handleSelectDecline}
+                disabled={isSubmitting}
+                className="w-full py-2.5 px-4 bg-transparent border border-[#9A9182] hover:bg-[#F2ECE1] text-[#554D41] rounded-xl text-xs font-semibold transition-all active:scale-[0.98] text-center"
+              >
+                {isSubmitting ? 'מעדכן...' : 'לא מתאפשר לי להגיע'}
               </button>
             </div>
-          )}
+          </div>
+        )}
 
-          {step === 1 && (
-            <div className="space-y-6 animate-in slide-in-from-left-4">
-              <h2 className="text-2xl font-bold text-center mb-8">איך קוראים לכם?</h2>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                className="w-full bg-[#FDFBF7] border border-[#4A5D4E]/30 rounded-xl px-4 py-4 text-center text-lg focus:outline-none focus:ring-2 focus:ring-[#4A5D4E]"
-                placeholder="שם משפחה / מלא"
-                autoFocus
-              />
-            </div>
-          )}
+        {/* ================= SCREEN 2: ATTENDING (GUEST COUNTS ONLY) ================= */}
+        {step === 2 && (
+          <div className="flex-1 flex flex-col justify-between space-y-4">
+            <div className="space-y-4">
+              <div className="text-center pt-1">
+                <h2 className="text-base font-bold text-[#2C352E]">כמה מגיעים לחגוג?</h2>
+                <p className="text-xs text-[#6B786D] mt-0.5">ספירת האורחים עוזרת לנו להיערך בהתאם</p>
+              </div>
 
-          {step === 2 && (
-            <div className="space-y-6 animate-in slide-in-from-left-4">
-              <h2 className="text-2xl font-bold text-center mb-8">האם תגיעו לחגוג איתנו?</h2>
-              <div className="flex flex-col gap-4">
-                <label className="cursor-pointer relative">
-                  <input type="radio" name="attending" value="yes" checked={formData.attending === 'yes'} onChange={handleChange} className="peer sr-only" />
-                  <div className="text-center py-4 text-lg border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E] peer-checked:text-white transition-all hover:bg-[#FDFBF7]">
-                    ברור, נגיע בשמחה!
+              {/* Guest Counters */}
+              <div className="space-y-3">
+                {/* Adults (11+) */}
+                <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3.5 flex items-center justify-between shadow-xs">
+                  <div>
+                    <div className="text-sm font-bold text-[#2C352E]">מבוגרים (11+)</div>
+                    <div className="text-[11px] text-[#7A877C]">נוער ומבוגרים</div>
                   </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, adults: Math.max(1, prev.adults - 1) }))
+                      }
+                      className="w-8 h-8 rounded-full border border-[#D0C8B8] flex items-center justify-center text-sm font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                    >
+                      -
+                    </button>
+                    <span className="w-5 text-center text-sm font-bold text-[#2C352E]">
+                      {formData.adults}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, adults: prev.adults + 1 }))}
+                      className="w-8 h-8 rounded-full border border-[#D0C8B8] flex items-center justify-center text-sm font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Kids (3-11) */}
+                <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3.5 flex items-center justify-between shadow-xs">
+                  <div>
+                    <div className="text-sm font-bold text-[#2C352E]">ילדים (3-11)</div>
+                    <div className="text-[11px] text-[#7A877C]">מנות ילדים</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, children: Math.max(0, prev.children - 1) }))
+                      }
+                      className="w-8 h-8 rounded-full border border-[#D0C8B8] flex items-center justify-center text-sm font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                    >
+                      -
+                    </button>
+                    <span className="w-5 text-center text-sm font-bold text-[#2C352E]">
+                      {formData.children}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, children: prev.children + 1 }))}
+                      className="w-8 h-8 rounded-full border border-[#D0C8B8] flex items-center justify-center text-sm font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+
+                {/* Babies (עד 3) */}
+                <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3.5 flex items-center justify-between shadow-xs">
+                  <div>
+                    <div className="text-sm font-bold text-[#2C352E]">תינוקות (עד 3)</div>
+                    <div className="text-[11px] text-[#7A877C]">כיסאות אוכל / עגלות</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setFormData((prev) => ({ ...prev, babies: Math.max(0, prev.babies - 1) }))
+                      }
+                      className="w-8 h-8 rounded-full border border-[#D0C8B8] flex items-center justify-center text-sm font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                    >
+                      -
+                    </button>
+                    <span className="w-5 text-center text-sm font-bold text-[#2C352E]">
+                      {formData.babies}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, babies: prev.babies + 1 }))}
+                      className="w-8 h-8 rounded-full border border-[#D0C8B8] flex items-center justify-center text-sm font-bold text-[#4A5D4E] hover:bg-[#F4EFE6]"
+                    >
+                      +
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Buttons */}
+            <div className="space-y-2 pt-3">
+              <button
+                type="button"
+                onClick={() => goToStep(3)}
+                className="w-full py-3 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-[0.98]"
+              >
+                המשך ←
+              </button>
+              <button
+                type="button"
+                onClick={() => goToStep(1)}
+                className="w-full py-2 px-4 text-[#666] hover:text-[#2C352E] text-xs font-semibold text-center"
+              >
+                חזור →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ================= SCREEN 3: ATTENDING (BLESSING & SUBMIT) ================= */}
+        {step === 3 && (
+          <div className="flex-1 flex flex-col justify-between space-y-4">
+            <div className="space-y-3.5">
+              {/* Summary Badge */}
+              <div className="bg-white border border-[#E8E2D5] rounded-xl px-3.5 py-2 text-xs flex justify-between items-center text-[#526054] shadow-xs">
+                <span>
+                  הרכב:{' '}
+                  <strong>
+                    {formData.adults} מבוגרים
+                    {formData.children > 0 ? `, ${formData.children} ילדים` : ''}
+                    {formData.babies > 0 ? `, ${formData.babies} תינוקות` : ''}
+                  </strong>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => goToStep(2)}
+                  className="text-[#4A5D4E] underline text-[11px]"
+                >
+                  עריכה
+                </button>
+              </div>
+
+              {/* Blessing Form */}
+              <div className="bg-white border border-[#E8E2D5] rounded-2xl p-4 space-y-3 shadow-xs">
+                <label className="block text-xs font-bold text-[#2C352E]">
+                  רוצה להשאיר ברכה לתובל? (אופציונלי)
                 </label>
-                <label className="cursor-pointer relative">
-                  <input type="radio" name="attending" value="no" checked={formData.attending === 'no'} onChange={handleChange} className="peer sr-only" />
-                  <div className="text-center py-4 text-lg border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E] peer-checked:text-white transition-all hover:bg-[#FDFBF7]">
-                    לצערנו לא נוכל
-                  </div>
-                </label>
-              </div>
-            </div>
-          )}
+                <textarea
+                  rows={3}
+                  value={blessingData.content}
+                  onChange={(e) =>
+                    setBlessingData((prev) => ({ ...prev, content: e.target.value }))
+                  }
+                  placeholder="מזל טוב תובל היקר..."
+                  className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5CFC3] bg-white focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] placeholder-[#9E9689]"
+                />
 
-          {step === 3 && (
-            <div className="space-y-6 animate-in slide-in-from-left-4">
-              <h2 className="text-2xl font-bold text-center mb-8">לאיזה חלק תגיעו?</h2>
-              <div className="flex flex-col gap-3">
-                {[
-                  { value: 'עלייה לתורה', label: 'רק לעלייה לתורה (16:00)' },
-                  { value: 'מסיבה', label: 'רק למסיבה (17:00)' },
-                  { value: 'שניהם', label: 'מגיעים להכל!' }
-                ].map((option) => (
-                  <label key={option.value} className="cursor-pointer relative">
-                    <input type="radio" name="part" value={option.value} checked={formData.part === option.value} onChange={handleChange} className="peer sr-only" />
-                    <div className="text-center py-4 text-lg border border-[#4A5D4E]/30 rounded-xl peer-checked:bg-[#4A5D4E]/10 peer-checked:border-[#4A5D4E] peer-checked:font-bold transition-all">
-                      {option.label}
-                    </div>
-                  </label>
-                ))}
-              </div>
-            </div>
-          )}
+                {/* AI & Undo/Redo Controls */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={handleUndo}
+                    disabled={historyIndex < 0}
+                    className="p-2 bg-white text-[#4A5D4E] border border-[#D5CFC3] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-30"
+                    title="חזור"
+                  >
+                    <Undo2 className="w-3.5 h-3.5" />
+                  </button>
 
-          {step === 4 && (
-            <div className="space-y-6 animate-in slide-in-from-left-4">
-              <h2 className="text-2xl font-bold text-center mb-8">כמה מגיעים?</h2>
-              <div className="space-y-4">
-                {[
-                  { id: 'adults', label: 'מבוגרים (12+)', val: formData.adults },
-                  { id: 'children', label: 'ילדים (2-12)', val: formData.children },
-                  { id: 'babies', label: 'תינוקות (0-2)', val: formData.babies }
-                ].map(field => (
-                  <div key={field.id} className="flex items-center justify-between p-4 bg-[#FDFBF7] rounded-xl border border-[#4A5D4E]/10">
-                    <div className="font-medium text-lg">{field.label}</div>
-                    <div className="flex items-center gap-4">
-                      <button onClick={() => setFormData(p => ({...p, [field.id]: Math.max(0, p[field.id as keyof typeof formData] as number - 1)}))} className="w-8 h-8 rounded-full bg-white border border-[#4A5D4E] text-[#4A5D4E] flex items-center justify-center font-bold">-</button>
-                      <span className="w-4 text-center font-bold text-lg">{field.val}</span>
-                      <button onClick={() => setFormData(p => ({...p, [field.id]: (p[field.id as keyof typeof formData] as number) + 1}))} className="w-8 h-8 rounded-full bg-[#4A5D4E] text-white flex items-center justify-center font-bold">+</button>
-                    </div>
+                  <button
+                    type="button"
+                    onClick={handleAIEnhance}
+                    disabled={isAILoading}
+                    className="flex-1 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2 rounded-lg text-xs font-medium shadow-xs disabled:opacity-60"
+                  >
+                    <Wand2 className={`w-3.5 h-3.5 ${isAILoading ? 'animate-spin' : ''}`} />
+                    <span>
+                      {isAILoading
+                        ? 'הקסם קורה...'
+                        : blessingData.content.trim()
+                        ? 'שדרוג ברכה עם AI'
+                        : 'יצירת ברכה מאפס עם AI'}
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleRedo}
+                    disabled={historyIndex >= history.length - 1}
+                    className="p-2 bg-white text-[#4A5D4E] border border-[#D5CFC3] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-30"
+                    title="בצע שוב"
+                  >
+                    <Redo2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Sharing Levels (High-Contrast Custom Radios) */}
+                <div className="pt-2 border-t border-[#F0EBE1] space-y-1.5">
+                  <div className="text-[11px] font-bold text-[#3E4A40]">מי יכול לראות את הברכה?</div>
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => setBlessingData((prev) => ({ ...prev, isPublic: true }))}
+                      className={`flex items-center gap-2.5 p-2 rounded-xl text-right transition-all ${
+                        blessingData.isPublic
+                          ? 'border-2 border-[#4A5D4E] bg-[#4A5D4E]/8 shadow-xs'
+                          : 'border border-[#D5CFC3] bg-white hover:bg-[#FAF8F5]'
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center bg-white flex-shrink-0 ${
+                          blessingData.isPublic ? 'border-[#4A5D4E]' : 'border-[#D0C8B8]'
+                        }`}
+                      >
+                        {blessingData.isPublic && (
+                          <div className="w-2 h-2 rounded-full bg-[#4A5D4E]" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-xs ${
+                          blessingData.isPublic
+                            ? 'font-bold text-[#2C352E]'
+                            : 'font-medium text-[#7A877C]'
+                        }`}
+                      >
+                        גלויה לכולם
+                      </span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setBlessingData((prev) => ({ ...prev, isPublic: false }))}
+                      className={`flex items-center gap-2.5 p-2 rounded-xl text-right transition-all ${
+                        !blessingData.isPublic
+                          ? 'border-2 border-[#4A5D4E] bg-[#4A5D4E]/8 shadow-xs'
+                          : 'border border-[#D5CFC3] bg-white hover:bg-[#FAF8F5]'
+                      }`}
+                    >
+                      <div
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center bg-white flex-shrink-0 ${
+                          !blessingData.isPublic ? 'border-[#4A5D4E]' : 'border-[#D0C8B8]'
+                        }`}
+                      >
+                        {!blessingData.isPublic && (
+                          <div className="w-2 h-2 rounded-full bg-[#4A5D4E]" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-xs ${
+                          !blessingData.isPublic
+                            ? 'font-bold text-[#2C352E]'
+                            : 'font-medium text-[#7A877C]'
+                        }`}
+                      >
+                        פרטית לתובל
+                      </span>
+                    </button>
                   </div>
-                ))}
+                </div>
               </div>
-              {errorMessage && <div className="text-red-500 text-center font-medium mt-2">{errorMessage}</div>}
             </div>
-          )}
-          
-          {step === 5 && (
-            <div className="space-y-6 text-center animate-in zoom-in-95">
-              <h2 className="text-2xl font-bold mb-4">מוכנים לשלוח?</h2>
-              <div className="bg-[#FDFBF7] p-6 rounded-xl border border-[#4A5D4E]/20 space-y-2 text-right">
-                <p><strong>שם:</strong> {formData.name}</p>
-                <p><strong>הגעה:</strong> {formData.attending === 'yes' ? 'מגיעים בשמחה' : 'לא מגיעים'}</p>
-                {formData.attending === 'yes' && (
+
+            {submitError && (
+              <p className="text-xs text-red-500 font-medium text-center">{submitError}</p>
+            )}
+
+            {/* Navigation Buttons */}
+            <div className="space-y-2 pt-3">
+              <button
+                type="button"
+                onClick={handleFinalSubmit}
+                disabled={isSubmitting}
+                className="w-full py-3 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-[0.98] disabled:opacity-60"
+              >
+                {isSubmitting ? 'שומר פרטים...' : 'אישור סופי ושליחה'}
+              </button>
+              <button
+                type="button"
+                onClick={() => goToStep(2)}
+                className="w-full py-2 px-4 text-[#666] hover:text-[#2C352E] text-xs font-semibold text-center"
+              >
+                חזור →
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ================= SCREEN 4: SUCCESS & WAZE ================= */}
+        {step === 4 && (
+          <div className="flex-1 flex flex-col justify-between text-center space-y-4 pt-1">
+            <div className="space-y-3.5">
+              {/* Tuval Portrait with Checkmark */}
+              <div className="relative w-20 h-20 mx-auto">
+                <img
+                  src="/tuval_portrait_color.jpg"
+                  alt="תובל"
+                  className="w-20 h-20 rounded-full object-cover border-2 border-[#4A5D4E] shadow-md mx-auto"
+                />
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#4A5D4E] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                </div>
+              </div>
+
+              <div className="space-y-0.5">
+                <h2 className="text-base font-bold text-[#2C352E]">איזה כיף, נתראה בשמחה!</h2>
+                <p className="text-xs text-[#526054]">פרטי ההגעה שלך נשמרו בהצלחה</p>
+              </div>
+
+              {/* Event Details Card */}
+              <div className="bg-white border border-[#E8E2D5] rounded-2xl p-4 text-xs text-[#526054] space-y-2.5 shadow-xs text-right">
+                <div className="flex items-center gap-2.5 text-[#3E4A40]">
+                  <svg
+                    className="w-4 h-4 text-[#4A5D4E] flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                  </svg>
+                  <span>
+                    <strong>מיקום:</strong> West Garden, רעננה
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5 text-[#3E4A40]">
+                  <svg
+                    className="w-4 h-4 text-[#4A5D4E] flex-shrink-0"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
+                    />
+                  </svg>
+                  <span>
+                    <strong>חניה:</strong> חניה מסודרת בצמוד למתחם האירועים
+                  </span>
+                </div>
+              </div>
+
+              {/* Waze & Calendar Actions */}
+              <div className="space-y-2 pt-1">
+                <a
+                  href="https://waze.com/ul?q=תחנת+דלק+מעייני+שמחה+רעננה"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full py-3 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2.5 shadow-md transition-all active:scale-[0.98]"
+                >
+                  <WazeIcon />
+                  <span className="tracking-wide">ניווט עם Waze</span>
+                </a>
+
+                {/* Multi-Calendar Options */}
+                <div className="pt-2 border-t border-[#E8E2D5] space-y-1.5">
+                  <div className="text-[11px] font-bold text-[#554D41]">הוספה ליומן:</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={googleCalendarUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#F2ECE1] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-[#4A5D4E]" />
+                      <span>Google Calendar</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={downloadIcs}
+                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#F2ECE1] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                    >
+                      <Calendar className="w-3.5 h-3.5 text-[#4A5D4E]" />
+                      <span>Apple / Outlook</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-3">
+              <button
+                type="button"
+                onClick={() => goToStep(1)}
+                className="text-xs text-[#6B786D] underline hover:text-[#2C352E] py-1.5"
+              >
+                ← טעות? עריכת פרטי הגעה
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ================= SCREEN 2 (DECLINE): THANK YOU & BLESSING ================= */}
+        {step === 'decline' && (
+          <div className="flex-1 flex flex-col justify-between text-center space-y-4 pt-1">
+            <div className="space-y-3.5">
+              {/* Tuval Portrait */}
+              <div className="w-16 h-16 mx-auto rounded-full overflow-hidden border-2 border-[#4A5D4E] shadow-sm">
+                <img
+                  src="/tuval_portrait_color.jpg"
+                  alt="תובל"
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <h2 className="text-lg font-bold text-[#2C352E]">תודה רבה!</h2>
+                <p className="text-xs text-[#526054] leading-relaxed font-medium">
+                  חבל שלא יתאפשר לך להגיע.
+                  <br />
+                  ניפגש בשמחות הבאות
+                </p>
+              </div>
+
+              {/* Optional Blessing Card */}
+              <div className="bg-white border border-[#E8E2D5] rounded-2xl p-4 text-right space-y-3 shadow-xs">
+                <p className="text-xs text-[#526054] font-medium text-center">
+                  בכל מקרה, נשמח לברכה עבור תובל
+                </p>
+
+                {blessingSubmitted ? (
+                  <div className="p-3 bg-[#F4EFE6] rounded-xl text-center text-xs font-bold text-[#4A5D4E]">
+                    תודה רבה! הברכה נשלחה באהבה לתובל.
+                  </div>
+                ) : (
                   <>
-                    <p><strong>חלק:</strong> {formData.part}</p>
-                    <p><strong>הרכב:</strong> {formData.adults} מבוגרים, {formData.children} ילדים, {formData.babies} תינוקות</p>
+                    <textarea
+                      rows={3}
+                      value={blessingData.content}
+                      onChange={(e) =>
+                        setBlessingData((prev) => ({ ...prev, content: e.target.value }))
+                      }
+                      placeholder="מזל טוב תובל היקר..."
+                      className="w-full px-3 py-2 text-xs rounded-xl border border-[#D5CFC3] bg-white focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] placeholder-[#9E9689]"
+                    />
+
+                    {/* AI & Controls */}
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleUndo}
+                        disabled={historyIndex < 0}
+                        className="p-2 bg-white text-[#4A5D4E] border border-[#D5CFC3] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-30"
+                        title="חזור"
+                      >
+                        <Undo2 className="w-3.5 h-3.5" />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleAIEnhance}
+                        disabled={isAILoading}
+                        className="flex-1 flex items-center justify-center gap-1.5 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2 rounded-lg text-xs font-medium shadow-xs disabled:opacity-60"
+                      >
+                        <Wand2 className={`w-3.5 h-3.5 ${isAILoading ? 'animate-spin' : ''}`} />
+                        <span>
+                          {isAILoading
+                            ? 'הקסם קורה...'
+                            : blessingData.content.trim()
+                            ? 'שדרוג ברכה עם AI'
+                            : 'יצירת ברכה מאפס עם AI'}
+                        </span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleRedo}
+                        disabled={historyIndex >= history.length - 1}
+                        className="p-2 bg-white text-[#4A5D4E] border border-[#D5CFC3] rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-30"
+                        title="בצע שוב"
+                      >
+                        <Redo2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+
+                    {/* Sharing Levels */}
+                    <div className="pt-2 border-t border-[#F0EBE1] space-y-1.5">
+                      <div className="text-[11px] font-bold text-[#3E4A40]">
+                        מי יכול לראות את הברכה?
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <button
+                          type="button"
+                          onClick={() => setBlessingData((prev) => ({ ...prev, isPublic: true }))}
+                          className={`flex items-center gap-2.5 p-2 rounded-xl text-right transition-all ${
+                            blessingData.isPublic
+                              ? 'border-2 border-[#4A5D4E] bg-[#4A5D4E]/8 shadow-xs'
+                              : 'border border-[#D5CFC3] bg-white hover:bg-[#FAF8F5]'
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center bg-white flex-shrink-0 ${
+                              blessingData.isPublic ? 'border-[#4A5D4E]' : 'border-[#D0C8B8]'
+                            }`}
+                          >
+                            {blessingData.isPublic && (
+                              <div className="w-2 h-2 rounded-full bg-[#4A5D4E]" />
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs ${
+                              blessingData.isPublic
+                                ? 'font-bold text-[#2C352E]'
+                                : 'font-medium text-[#7A877C]'
+                            }`}
+                          >
+                            גלויה לכולם
+                          </span>
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => setBlessingData((prev) => ({ ...prev, isPublic: false }))}
+                          className={`flex items-center gap-2.5 p-2 rounded-xl text-right transition-all ${
+                            !blessingData.isPublic
+                              ? 'border-2 border-[#4A5D4E] bg-[#4A5D4E]/8 shadow-xs'
+                              : 'border border-[#D5CFC3] bg-white hover:bg-[#FAF8F5]'
+                          }`}
+                        >
+                          <div
+                            className={`w-4 h-4 rounded-full border-2 flex items-center justify-center bg-white flex-shrink-0 ${
+                              !blessingData.isPublic ? 'border-[#4A5D4E]' : 'border-[#D0C8B8]'
+                            }`}
+                          >
+                            {!blessingData.isPublic && (
+                              <div className="w-2 h-2 rounded-full bg-[#4A5D4E]" />
+                            )}
+                          </div>
+                          <span
+                            className={`text-xs ${
+                              !blessingData.isPublic
+                                ? 'font-bold text-[#2C352E]'
+                                : 'font-medium text-[#7A877C]'
+                            }`}
+                          >
+                            פרטית לתובל
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleDeclineBlessingSubmit}
+                      disabled={isSubmitting || !blessingData.content.trim()}
+                      className="w-full py-2 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-xs font-bold shadow-xs transition-all disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'שולח ברכה...' : 'שליחת ברכה'}
+                    </button>
                   </>
                 )}
               </div>
+            </div>
+
+            <div className="pt-2">
               <button
-                onClick={() => handleSubmit()}
-                disabled={status === 'submitting'}
-                className="w-full bg-[#4A5D4E] text-white py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 hover:bg-[#3A4A3E] disabled:opacity-70"
+                type="button"
+                onClick={() => goToStep(1)}
+                className="text-xs text-[#6B786D] underline hover:text-[#2C352E] py-1.5"
               >
-                {status === 'submitting' ? 'שולח...' : 'אישור סופי'}
-                {!status && <Send className="w-5 h-5 rtl:-scale-x-100" />}
+                ← טעות? עדכון תשובה
               </button>
             </div>
-          )}
-        </div>
-
-        {/* Footer Navigation */}
-        {step > 0 && step <= 5 && (
-          <div className="p-4 border-t border-[#4A5D4E]/10 flex items-center justify-between bg-gray-50 shrink-0">
-            <button onClick={handlePrev} className="p-2 text-[#4A5D4E] hover:bg-gray-200 rounded-lg flex items-center gap-1">
-              <ChevronRight className="w-5 h-5" /> חזור
-            </button>
-            {step < 5 && (
-              <button 
-                onClick={handleNext} 
-                disabled={
-                  (step === 1 && !formData.name.trim()) || 
-                  (step === 2 && !formData.attending)
-                }
-                className="px-6 py-2 bg-[#4A5D4E] text-white rounded-lg font-medium hover:bg-[#3A4A3E] disabled:opacity-50 flex items-center gap-1"
-              >
-                המשך <ChevronLeft className="w-5 h-5" />
-              </button>
-            )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
-
-export default App;
