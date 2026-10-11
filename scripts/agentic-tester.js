@@ -27,9 +27,9 @@ async function runAgent(persona) {
   const page = await context.newPage();
 
   try {
-    await page.goto('http://localhost:5173');
+    await page.goto('https://tuval-barmitzvah-2026.onrender.com/');
   } catch(e) {
-    console.error("Could not reach localhost:5173", e);
+    console.error("Could not reach production site", e);
     await browser.close();
     return;
   }
@@ -100,7 +100,7 @@ async function runAgent(persona) {
       
       if (response.action === 'click' && response.elementId !== undefined) {
          console.log(`👉 Clicking element ID: ${response.elementId}`);
-         await page.click(`[data-agent-id="${response.elementId}"]`, { timeout: 2000 });
+         await page.click(`[data-agent-id="${response.elementId}"]`, { timeout: 2000, force: true });
       } else if (response.action === 'type' && response.elementId !== undefined) {
          console.log(`⌨️ Typing "${response.value}" into element ID: ${response.elementId}`);
          await page.fill(`[data-agent-id="${response.elementId}"]`, response.value, { timeout: 2000 });

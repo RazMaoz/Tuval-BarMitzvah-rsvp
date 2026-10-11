@@ -56,7 +56,7 @@ test.describe('Red Team Fuzz Testing (Redesigned Flow)', () => {
       await minusButtons.first().click();
     }
     // Should never go below 1 for adults
-    await expect(page.locator('span.w-5').first()).toHaveText('1');
+    await expect(page.locator('span.w-6, span.w-5').first()).toHaveText('1');
 
     await page.click('button:has-text("המשך")');
 

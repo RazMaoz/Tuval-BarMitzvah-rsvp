@@ -88,7 +88,7 @@ app.post('/api/blessings', async (req, res) => {
   }
 });
 
-app.post('/api/generate-blessing', async (req, res) => {
+app.post(['/api/generate-blessing', '/api/ai/enhance-blessing'], async (req, res) => {
   try {
     const { text, guestName } = req.body;
     const apiKey = process.env.GEMINI_API_KEY;
@@ -134,7 +134,7 @@ app.post('/api/generate-blessing', async (req, res) => {
     const aiResponse = await model.generateContent(prompt);
     const result = aiResponse.response.text();
     
-    res.json({ result: result.trim() });
+    res.json({ result: result.trim(), enhancedText: result.trim() });
   } catch (err) {
     console.error("Gemini Error:", err);
     res.status(500).json({ error: 'AI Generation Failed' });

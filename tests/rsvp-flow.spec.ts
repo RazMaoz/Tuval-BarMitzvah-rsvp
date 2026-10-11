@@ -70,4 +70,25 @@ test.describe('RSVP App E2E Tests (Redesigned Flow)', () => {
     // Return link check
     await expect(page.locator('text=← טעות? עדכון תשובה')).toBeVisible();
   });
+
+  test('Screen 1 fits strictly without scrolling on small mobile viewport with address bar (375x500)', async ({ page }) => {
+    // Simulate short mobile screen where browser search/address bar reduces available height
+    await page.setViewportSize({ width: 375, height: 500 });
+    await page.goto('/');
+
+    // Verify all Screen 1 key elements are visible and within viewport
+    await expect(page.locator('h1', { hasText: 'בר־המצווה של תובל' })).toBeInViewport();
+    await expect(page.locator('input[placeholder*="שם מלא"]')).toBeInViewport();
+    await expect(page.locator('button:has-text("אגיע בשמחה")')).toBeInViewport();
+    await expect(page.locator('button:has-text("לא מתאפשר לי להגיע")')).toBeInViewport();
+
+    // Verify no scroll overflow on body
+    const scrollInfo = await page.evaluate(() => {
+      return {
+        bodyScrollHeight: document.body.scrollHeight,
+        windowHeight: window.innerHeight,
+      };
+    });
+    expect(scrollInfo.bodyScrollHeight).toBeLessThanOrEqual(scrollInfo.windowHeight + 1);
+  });
 });
