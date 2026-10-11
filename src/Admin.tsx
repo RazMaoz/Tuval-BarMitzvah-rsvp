@@ -237,6 +237,19 @@ export default function Admin() {
                             hour12: false,
                           })
                         : '-'}
+                      {guest.updated_at && guest.updated_at !== guest.created_at && (
+                        <div className="text-[11px] text-emerald-800 font-bold mt-0.5" dir="rtl">
+                          ✏️ עודכן:{' '}
+                          <span dir="ltr">
+                            {new Date(guest.updated_at.includes('Z') ? guest.updated_at : guest.updated_at + 'Z').toLocaleTimeString('en-GB', {
+                              timeZone: 'Asia/Jerusalem',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              hour12: false,
+                            })}
+                          </span>
+                        </div>
+                      )}
                     </td>
                     <td className="p-3.5 text-center">
                       <button

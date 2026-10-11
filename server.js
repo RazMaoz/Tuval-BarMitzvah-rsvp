@@ -36,20 +36,34 @@ try {
 } catch (err) {
   // Column likely already exists, ignore
 }
-  
+
+try {
+  await db.execute(`ALTER TABLE guests ADD COLUMN updated_at DATETIME;`);
+} catch (err) {
+  // Column likely already exists, ignore
+}
+
 await db.execute(`
   CREATE TABLE IF NOT EXISTS blessings (
     id INTEGER PRIMARY KEY,
     author_name TEXT,
     content TEXT,
     is_public BOOLEAN,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME
   );
 `);
 
+try {
+  await db.execute(`ALTER TABLE blessings ADD COLUMN updated_at DATETIME;`);
+} catch (err) {
+  // Column likely already exists, ignore
+}
+
 app.post('/api/rsvp', async (req, res) => {
   try {
-    const { name, attending, part } = req.body;
+    const { id, guestId, name, attending, part } = req.body;
+    const targetId = id || guestId;
     const trimmedName = (name || '').trim();
     if (!trimmedName) {
       return res.status(400).json({ error: 'Name is required' });
@@ -68,12 +82,30 @@ app.post('/api/rsvp', async (req, res) => {
     const finalKids = isAttending ? kidsCount : 0;
     const finalAdults = isAttending ? adultsCount : 0;
     
-    await db.execute({
-      sql: `INSERT INTO guests (name, attending, event_part, babies, kids, adults) VALUES (?, ?, ?, ?, ?, ?)`,
+    if (targetId) {
+      const parsedId = parseInt(targetId, 10);
+      if (parsedId > 0) {
+        const existing = await db.execute({
+          sql: 'SELECT id FROM guests WHERE id = ?',
+          args: [parsedId]
+        });
+        if (existing.rows.length > 0) {
+          await db.execute({
+            sql: `UPDATE guests SET name = ?, attending = ?, event_part = ?, babies = ?, kids = ?, adults = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            args: [trimmedName, isAttending, finalPart, finalBabies, finalKids, finalAdults, parsedId]
+          });
+          return res.json({ success: true, guestId: parsedId, isUpdate: true });
+        }
+      }
+    }
+    
+    const result = await db.execute({
+      sql: `INSERT INTO guests (name, attending, event_part, babies, kids, adults, updated_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
       args: [trimmedName, isAttending, finalPart, finalBabies, finalKids, finalAdults]
     });
     
-    res.json({ success: true });
+    const newGuestId = Number(result.lastInsertRowid);
+    res.json({ success: true, guestId: newGuestId, isUpdate: false });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });
@@ -82,7 +114,8 @@ app.post('/api/rsvp', async (req, res) => {
 
 app.post('/api/blessings', async (req, res) => {
   try {
-    const { author_name, content, is_public } = req.body;
+    const { id, blessingId, author_name, content, is_public } = req.body;
+    const targetId = id || blessingId;
     const trimmedAuthor = (author_name || '').trim() || 'אורח';
     const trimmedContent = (content || '').trim();
     
@@ -92,12 +125,30 @@ app.post('/api/blessings', async (req, res) => {
     
     const isPublic = (is_public === true || is_public === 1 || is_public === '1' || is_public === 'true') ? 1 : 0;
     
-    await db.execute({
-      sql: `INSERT INTO blessings (author_name, content, is_public) VALUES (?, ?, ?)`,
+    if (targetId) {
+      const parsedId = parseInt(targetId, 10);
+      if (parsedId > 0) {
+        const existing = await db.execute({
+          sql: 'SELECT id FROM blessings WHERE id = ?',
+          args: [parsedId]
+        });
+        if (existing.rows.length > 0) {
+          await db.execute({
+            sql: `UPDATE blessings SET author_name = ?, content = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+            args: [trimmedAuthor, trimmedContent, isPublic, parsedId]
+          });
+          return res.json({ success: true, blessingId: parsedId, isUpdate: true });
+        }
+      }
+    }
+    
+    const result = await db.execute({
+      sql: `INSERT INTO blessings (author_name, content, is_public, updated_at) VALUES (?, ?, ?, CURRENT_TIMESTAMP)`,
       args: [trimmedAuthor, trimmedContent, isPublic]
     });
     
-    res.json({ success: true });
+    const newBlessingId = Number(result.lastInsertRowid);
+    res.json({ success: true, blessingId: newBlessingId, isUpdate: false });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Internal Server Error' });

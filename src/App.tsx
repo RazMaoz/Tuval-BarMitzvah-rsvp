@@ -38,6 +38,48 @@ export default function App() {
     };
   });
 
+  const [guestId, setGuestId] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('rsvp_guest_id');
+      return saved ? Number(saved) : null;
+    }
+    return null;
+  });
+
+  const [blessingId, setBlessingId] = useState<number | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem('rsvp_blessing_id');
+      return saved ? Number(saved) : null;
+    }
+    return null;
+  });
+
+  const isEditMode = Boolean(guestId);
+
+  const handleResetGuest = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('rsvp_guest_id');
+      sessionStorage.removeItem('rsvp_blessing_id');
+      sessionStorage.removeItem('rsvp_name');
+    }
+    setGuestId(null);
+    setBlessingId(null);
+    setFormData({
+      name: '',
+      adults: 1,
+      children: 0,
+      babies: 0,
+    });
+    setBlessingData({
+      content: '',
+      isPublic: true,
+    });
+    setBlessingSubmitted(false);
+    setHistory([]);
+    setHistoryIndex(-1);
+    goToStep(1);
+  };
+
   // Defense against page refresh on mid-step without a name
   useEffect(() => {
     if (step !== 1 && !formData.name.trim()) {
@@ -81,10 +123,11 @@ export default function App() {
     setIsSubmitting(true);
     setSubmitError('');
     try {
-      await fetch('/api/rsvp', {
+      const res = await fetch('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: guestId,
           name: formData.name.trim(),
           attending: false,
           part: 'אינו מגיע',
@@ -93,6 +136,13 @@ export default function App() {
           babies: 0,
         }),
       });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.guestId) {
+          setGuestId(data.guestId);
+          sessionStorage.setItem('rsvp_guest_id', String(data.guestId));
+        }
+      }
       goToStep('decline');
     } catch {
       goToStep('decline');
@@ -114,6 +164,7 @@ export default function App() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: guestId,
           name: formData.name.trim(),
           attending: true,
           part: 'האירוע המלא',
@@ -125,18 +176,31 @@ export default function App() {
       });
 
       if (!res.ok) throw new Error('שגיאה בשמירת הנתונים');
+      const data = await res.json();
+      if (data.guestId) {
+        setGuestId(data.guestId);
+        sessionStorage.setItem('rsvp_guest_id', String(data.guestId));
+      }
 
       // Submit blessing if entered
       if (blessingData.content.trim()) {
-        await fetch('/api/blessings', {
+        const blessRes = await fetch('/api/blessings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            id: blessingId,
             author_name: formData.name.trim(),
             content: blessingData.content.trim(),
             is_public: blessingData.isPublic,
           }),
         });
+        if (blessRes.ok) {
+          const blessData = await blessRes.json();
+          if (blessData.blessingId) {
+            setBlessingId(blessData.blessingId);
+            sessionStorage.setItem('rsvp_blessing_id', String(blessData.blessingId));
+          }
+        }
       }
 
       goToStep(4);
@@ -152,15 +216,23 @@ export default function App() {
     if (!blessingData.content.trim()) return;
     setIsSubmitting(true);
     try {
-      await fetch('/api/blessings', {
+      const res = await fetch('/api/blessings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          id: blessingId,
           author_name: formData.name.trim() || 'אורח',
           content: blessingData.content.trim(),
           is_public: blessingData.isPublic,
         }),
       });
+      if (res.ok) {
+        const blessData = await res.json();
+        if (blessData.blessingId) {
+          setBlessingId(blessData.blessingId);
+          sessionStorage.setItem('rsvp_blessing_id', String(blessData.blessingId));
+        }
+      }
       setBlessingSubmitted(true);
     } catch {
       setBlessingSubmitted(true);
@@ -277,12 +349,36 @@ END:VCALENDAR`;
         </div>
       </header>
 
-      {/* Main Container - Zero Scroll Guaranteed */}
+      {/* Main Container */}
       <main
         className={`flex-1 min-h-0 max-w-md w-full mx-auto px-3.5 py-2 flex flex-col justify-between ${
-          step === 1 ? 'overflow-hidden' : 'overflow-y-auto'
+          step === 1 && !isEditMode ? 'overflow-hidden' : 'overflow-y-auto'
         }`}
       >
+        {/* Edit Mode Banner (Option 3 UX) */}
+        {isEditMode && guestId && step !== 4 && step !== 'decline' && (
+          <div className="bg-[#EBF3ED] border border-[#A6C5AB] rounded-2xl p-2.5 px-3 mb-2 flex items-center justify-between shadow-xs text-right flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="text-base">✏️</span>
+              <div>
+                <div className="text-xs font-bold text-[#2C352E]">
+                  מצב עריכה: מעדכן רישום
+                </div>
+                <div className="text-[11px] text-[#556958]">
+                  מעדכן עבור: <span className="font-semibold">{formData.name || 'אורח'}</span> (ללא כפילויות)
+                </div>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleResetGuest}
+              className="text-xs font-bold text-[#4A5D4E] hover:text-[#2C352E] bg-white border border-[#A6C5AB] px-2.5 py-1 rounded-xl shadow-2xs hover:bg-[#F4EFE6] transition-colors whitespace-nowrap cursor-pointer"
+            >
+              + אורח חדש
+            </button>
+          </div>
+        )}
+
         {/* ================= SCREEN 1: COMBINED LANDING (STRICT ZERO SCROLL) ================= */}
         {step === 1 && (
           <div className="flex-1 flex flex-col justify-between h-full min-h-0 space-y-2">
@@ -355,7 +451,7 @@ END:VCALENDAR`;
                 onClick={handleSelectAttending}
                 className="w-full py-2.5 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-base font-bold shadow-md transition-all active:scale-[0.98] text-center cursor-pointer"
               >
-                אגיע בשמחה
+                {isEditMode ? 'המשך לעדכון כמויות ⬅' : 'אגיע בשמחה'}
               </button>
               <button
                 type="button"
@@ -363,7 +459,7 @@ END:VCALENDAR`;
                 disabled={isSubmitting}
                 className="w-full py-2 px-4 bg-transparent border border-[#9A9182] hover:bg-[#F2ECE1] text-[#554D41] rounded-xl text-sm font-semibold transition-all active:scale-[0.98] text-center cursor-pointer"
               >
-                {isSubmitting ? 'מעדכן...' : 'לא מתאפשר לי להגיע'}
+                {isSubmitting ? 'מעדכן...' : isEditMode ? 'עדכון לסטטוס לא מגיע' : 'לא מתאפשר לי להגיע'}
               </button>
             </div>
           </div>
@@ -642,9 +738,9 @@ END:VCALENDAR`;
                 type="button"
                 onClick={handleFinalSubmit}
                 disabled={isSubmitting}
-                className="w-full py-3 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-base font-bold shadow-md transition-all active:scale-[0.98] disabled:opacity-60"
+                className="w-full py-3 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-base font-bold shadow-md transition-all active:scale-[0.98] disabled:opacity-60 cursor-pointer"
               >
-                {isSubmitting ? 'שומר פרטים...' : 'אישור סופי ושליחה'}
+                {isSubmitting ? 'מעדכן פרטים...' : isEditMode ? 'שמירת עדכון ההגעה' : 'אישור סופי ושליחה'}
               </button>
               <button
                 type="button"
@@ -933,9 +1029,9 @@ END:VCALENDAR`;
                       type="button"
                       onClick={handleDeclineBlessingSubmit}
                       disabled={isSubmitting || !blessingData.content.trim()}
-                      className="w-full py-2.5 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-sm font-bold shadow-xs transition-all disabled:opacity-50"
+                      className="w-full py-2.5 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-sm font-bold shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                     >
-                      {isSubmitting ? 'שולח ברכה...' : 'שליחת ברכה'}
+                      {isSubmitting ? 'מעדכן ברכה...' : isEditMode && blessingId ? 'עדכון ברכה' : 'שליחת ברכה'}
                     </button>
                   </>
                 )}
