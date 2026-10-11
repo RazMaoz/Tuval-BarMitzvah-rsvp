@@ -122,7 +122,7 @@ test.describe('RED TEAM AUDIT: Layer 1 - UI/UX & Scrolling Across Viewports', ()
 
     // Submit to reach Screen 4
     await s3Submit.click();
-    await expect(page.locator('h2', { hasText: 'איזה כיף, נתראה בשמחה!' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=איזה כיף, נתראה בשמחה!')).toBeVisible({ timeout: 10000 });
     // Screen 4 check: verify elements at bottom are reachable via scroll
     const calendarSection = page.locator('text=זהו לעת עתה! הכל נשמר בהצלחה.');
     await calendarSection.scrollIntoViewIfNeeded();
@@ -143,7 +143,7 @@ test.describe('RED TEAM AUDIT: Layer 1 - UI/UX & Scrolling Across Viewports', ()
     await declinePage.goto('/');
     await declinePage.fill('input[placeholder*="שם מלא"]', 'בדיקת גלילה סירוב');
     await declinePage.click('button:has-text("לא מתאפשר לי להגיע")');
-    await expect(declinePage.locator('h2', { hasText: 'תודה רבה!' })).toBeVisible({ timeout: 10000 });
+    await expect(declinePage.locator('h2', { hasText: 'תודה רבה' })).toBeVisible({ timeout: 10000 });
 
     const updateReturnBtn = declinePage.locator('text=← טעות? עדכון תשובה');
     await updateReturnBtn.scrollIntoViewIfNeeded();
@@ -189,7 +189,8 @@ test.describe('RED TEAM AUDIT: Layer 2 & 3 - Real Backend Functionality, State &
     await page.click('button:has-text("אישור סופי ושליחה")');
 
     // Step 4: Verify Success screen
-    await expect(page.locator('h2', { hasText: 'איזה כיף, נתראה בשמחה!' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=איזה כיף, נתראה בשמחה!')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=תודה רבה, ${testGuestName}!`)).toBeVisible();
     await expect(page.locator('text=ניווט עם Waze')).toBeVisible();
 
     // Verify Real DB Record in Turso
@@ -227,7 +228,8 @@ test.describe('RED TEAM AUDIT: Layer 2 & 3 - Real Backend Functionality, State &
     await page.fill('input[placeholder*="שם מלא"]', declineName1);
     await page.click('button:has-text("לא מתאפשר לי להגיע")');
 
-    await expect(page.locator('h2', { hasText: 'תודה רבה!' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h2', { hasText: 'תודה רבה' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=תודה רבה, ${declineName1}!`)).toBeVisible();
     const check1 = await db.execute({
       sql: 'SELECT * FROM guests WHERE name = ?',
       args: [declineName1]
@@ -250,7 +252,8 @@ test.describe('RED TEAM AUDIT: Layer 2 & 3 - Real Backend Functionality, State &
     await page.fill('input[placeholder*="שם מלא"]', declineName2);
     await page.click('button:has-text("לא מתאפשר לי להגיע")');
 
-    await expect(page.locator('h2', { hasText: 'תודה רבה!' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('h2', { hasText: 'תודה רבה' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=תודה רבה, ${declineName2}!`)).toBeVisible();
     await page.fill('textarea', blessingContent);
 
     // Set to private blessing
@@ -339,9 +342,10 @@ test.describe('RED TEAM AUDIT: Layer 2 & 3 - Real Backend Functionality, State &
     await expect(page.locator('span.w-6').nth(1)).toHaveText('0');
   });
 
-  test('DEFECT AUDIT: Refresh on Step 3 wipes out name but allows empty submission to DB', async ({ page }) => {
+  test('VERIFIED FIX: Refresh on Step 3 retains name from sessionStorage and prevents empty submission to DB', async ({ page }) => {
+    const reloadTestName = `טסטר רענון ${Date.now()}`;
     await page.goto('/');
-    await page.fill('input[placeholder*="שם מלא"]', 'טסטר רענון');
+    await page.fill('input[placeholder*="שם מלא"]', reloadTestName);
     await page.click('button:has-text("אגיע בשמחה")');
     await page.click('button:has-text("המשך")');
     await expect(page.locator('text=הרכב:')).toBeVisible();
@@ -349,25 +353,25 @@ test.describe('RED TEAM AUDIT: Layer 2 & 3 - Real Backend Functionality, State &
     // Reload page while on Step 3
     await page.reload();
 
-    // App is still on Step 3 because history.state.step === 3
+    // App is still on Step 3 and retains name
     await expect(page.locator('text=הרכב:')).toBeVisible();
 
-    // But let's check what submitting does now that React state formData.name was wiped!
     const submitBtn = page.locator('button:has-text("אישור סופי ושליחה")');
     await expect(submitBtn).toBeEnabled();
 
-    // Submitting now will post { name: "" }
+    // Submitting now will post with preserved name
     await submitBtn.click();
-    await expect(page.locator('h2', { hasText: 'איזה כיף, נתראה בשמחה!' })).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('text=איזה כיף, נתראה בשמחה!')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator(`text=תודה רבה, ${reloadTestName}!`)).toBeVisible();
 
-    // Check DB for empty name row
-    const emptyRow = await db.execute("SELECT * FROM guests WHERE trim(name) = '' ORDER BY id DESC LIMIT 1");
-    console.log('Reload exploit created empty guest in DB:', emptyRow.rows[0]);
-    expect(emptyRow.rows.length).toBeGreaterThan(0);
+    // Verify row was created with the correct name, NOT empty
+    const row = await db.execute({
+      sql: "SELECT * FROM guests WHERE name = ?",
+      args: [reloadTestName]
+    });
+    expect(row.rows.length).toBe(1);
 
-    // Clean up exploit row
-    if (emptyRow.rows[0]) {
-      await db.execute({ sql: 'DELETE FROM guests WHERE id = ?', args: [emptyRow.rows[0].id] });
-    }
+    // Clean up
+    await db.execute({ sql: 'DELETE FROM guests WHERE id = ?', args: [row.rows[0].id] });
   });
 });

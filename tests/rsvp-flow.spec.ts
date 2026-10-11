@@ -46,7 +46,8 @@ test.describe('RSVP App E2E Tests (Redesigned Flow)', () => {
     await page.click('button:has-text("אישור סופי ושליחה")');
 
     // Screen 4: Success & Waze
-    await expect(page.locator('h2', { hasText: 'איזה כיף, נתראה בשמחה!' })).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'תודה רבה, משפחת כהן בדיקות!' })).toBeVisible();
+    await expect(page.locator('text=איזה כיף, נתראה בשמחה!')).toBeVisible();
     await expect(page.locator('text=ניווט עם Waze')).toBeVisible();
     await expect(page.locator('text=Google Calendar')).toBeVisible();
     await expect(page.locator('text=Apple / Outlook')).toBeVisible();
@@ -62,9 +63,10 @@ test.describe('RSVP App E2E Tests (Redesigned Flow)', () => {
 
     await page.click('button:has-text("לא מתאפשר לי להגיע")');
 
-    // Screen 2 (Decline): Success & Blessing
-    await expect(page.locator('h2', { hasText: 'תודה רבה!' })).toBeVisible();
-    await expect(page.locator('text=חבל שלא יתאפשר לך להגיע')).toBeVisible();
+    // Screen 2 (Decline): Success & Blessing with personal address
+    await expect(page.locator('h2', { hasText: 'תודה רבה, דוד ישראל!' })).toBeVisible();
+    await expect(page.locator('text=חבל שלא יתאפשר לך להגיע...')).toBeVisible();
+    await expect(page.locator('text=תשובתך נשמרה במערכת בהצלחה!')).toBeVisible();
     await expect(page.locator('text=בכל מקרה, נשמח לברכה עבור תובל')).toBeVisible();
     await expect(page.locator('text=גלויה לכולם')).toBeVisible();
     await expect(page.locator('text=פרטית לתובל')).toBeVisible();

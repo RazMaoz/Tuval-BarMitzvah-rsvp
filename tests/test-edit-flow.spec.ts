@@ -33,13 +33,12 @@ test('Full Edit Flow: Initial Submit -> Edit Mode -> Update with Zero Duplicates
   // 6. Click Edit Details ("טעות? עריכת פרטי הגעה")
   await page.click('button:has-text("עריכת פרטי הגעה")');
 
-  // 7. Verify back on Screen 1 with Edit Mode Banner
-  await page.waitForSelector('text=מצב עריכה: מעדכן רישום');
-  await expect(page.locator('text=מצב עריכה: מעדכן רישום')).toBeVisible();
-  await expect(page.locator(`text=מעדכן עבור: ${testName}`)).toBeVisible();
-  await expect(page.locator('button:has-text("+ אורח חדש")')).toBeVisible();
+  // 7. Verify back on Screen 1 with Compact Edit Mode Badge
+  await page.waitForSelector('text=מצב עריכה: מעדכן רישום עבור');
+  await expect(page.locator('text=מצב עריכה: מעדכן רישום עבור')).toBeVisible();
+  await expect(page.locator(`text=${testName}`)).toBeVisible();
 
-  // Take screenshot of Edit Mode Banner
+  // Take screenshot of Compact Edit Mode Badge
   await page.screenshot({ path: 'edit_mode_banner_screenshot.png' });
 
   // 8. Continue to update guest counts
@@ -57,6 +56,7 @@ test('Full Edit Flow: Initial Submit -> Edit Mode -> Update with Zero Duplicates
 
   // 10. Screen 4 again
   await page.waitForSelector('text=זהו לעת עתה! הכל נשמר בהצלחה.');
+  await expect(page.locator(`text=תודה רבה, ${testName}!`)).toBeVisible();
 
   // 11. Verify via API that there is EXACTLY 1 guest with this name and kids = 3
   const guestsRes = await page.request.get('http://localhost:3001/api/guests');

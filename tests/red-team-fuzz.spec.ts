@@ -24,7 +24,8 @@ test.describe('Red Team Fuzz Testing (Redesigned Flow)', () => {
     await page.click('button:has-text("לא מתאפשר לי להגיע")');
 
     // Verify on Decline screen
-    await expect(page.locator('h2', { hasText: 'תודה רבה!' })).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'תודה רבה' })).toBeVisible();
+    await expect(page.locator('text=חבל שלא יתאפשר לך להגיע...')).toBeVisible();
 
     // Change mind again via "← טעות? עדכון תשובה"
     await page.click('text=← טעות? עדכון תשובה');
@@ -67,6 +68,7 @@ test.describe('Red Team Fuzz Testing (Redesigned Flow)', () => {
     await page.click('button:has-text("אישור סופי ושליחה")');
 
     // Verify reached success screen without alert dialog crashing app
-    await expect(page.locator('h2', { hasText: 'איזה כיף, נתראה בשמחה!' })).toBeVisible();
+    await expect(page.locator('text=איזה כיף, נתראה בשמחה!')).toBeVisible();
+    await expect(page.locator('h2', { hasText: 'תודה רבה' })).toBeVisible();
   });
 });

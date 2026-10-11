@@ -56,30 +56,6 @@ export default function App() {
 
   const isEditMode = Boolean(guestId);
 
-  const handleResetGuest = () => {
-    if (typeof window !== 'undefined') {
-      sessionStorage.removeItem('rsvp_guest_id');
-      sessionStorage.removeItem('rsvp_blessing_id');
-      sessionStorage.removeItem('rsvp_name');
-    }
-    setGuestId(null);
-    setBlessingId(null);
-    setFormData({
-      name: '',
-      adults: 1,
-      children: 0,
-      babies: 0,
-    });
-    setBlessingData({
-      content: '',
-      isPublic: true,
-    });
-    setBlessingSubmitted(false);
-    setHistory([]);
-    setHistoryIndex(-1);
-    goToStep(1);
-  };
-
   // Defense against page refresh on mid-step without a name
   useEffect(() => {
     if (step !== 1 && !formData.name.trim()) {
@@ -349,33 +325,18 @@ END:VCALENDAR`;
         </div>
       </header>
 
-      {/* Main Container */}
+      {/* Main Container - Strict Zero Scroll on Screen 1 */}
       <main
         className={`flex-1 min-h-0 max-w-md w-full mx-auto px-3.5 py-2 flex flex-col justify-between ${
-          step === 1 && !isEditMode ? 'overflow-hidden' : 'overflow-y-auto'
+          step === 1 ? 'overflow-hidden' : 'overflow-y-auto'
         }`}
       >
-        {/* Edit Mode Banner (Option 3 UX) */}
+        {/* Ultra-compact Edit Mode Indicator (Single Slim Line) */}
         {isEditMode && guestId && step !== 4 && step !== 'decline' && (
-          <div className="bg-[#EBF3ED] border border-[#A6C5AB] rounded-2xl p-2.5 px-3 mb-2 flex items-center justify-between shadow-xs text-right flex-shrink-0">
-            <div className="flex items-center gap-2">
-              <span className="text-base">✏️</span>
-              <div>
-                <div className="text-xs font-bold text-[#2C352E]">
-                  מצב עריכה: מעדכן רישום
-                </div>
-                <div className="text-[11px] text-[#556958]">
-                  מעדכן עבור: <span className="font-semibold">{formData.name || 'אורח'}</span> (ללא כפילויות)
-                </div>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={handleResetGuest}
-              className="text-xs font-bold text-[#4A5D4E] hover:text-[#2C352E] bg-white border border-[#A6C5AB] px-2.5 py-1 rounded-xl shadow-2xs hover:bg-[#F4EFE6] transition-colors whitespace-nowrap cursor-pointer"
-            >
-              + אורח חדש
-            </button>
+          <div className="bg-[#EBF3ED] border border-[#A6C5AB]/70 rounded-lg px-2.5 py-0.5 mb-1.5 flex items-center justify-center gap-1.5 text-[11px] font-medium text-[#2C352E] flex-shrink-0 shadow-2xs">
+            <span>✏️</span>
+            <span>מצב עריכה: מעדכן רישום עבור</span>
+            <strong className="font-bold text-[#3E4E42]">{formData.name.trim() || 'אורח'}</strong>
           </div>
         )}
 
@@ -775,9 +736,14 @@ END:VCALENDAR`;
                 </div>
               </div>
 
-              <div className="space-y-0.5">
-                <h2 className="text-lg font-bold text-[#2C352E]">איזה כיף, נתראה בשמחה!</h2>
-                <p className="text-sm text-[#526054]">פרטי ההגעה שלך נשמרו בהצלחה</p>
+              <div className="space-y-1">
+                <h2 className="text-xl font-bold text-[#2C352E]">
+                  תודה רבה{formData.name.trim() ? `, ${formData.name.trim()}` : ''}!
+                </h2>
+                <p className="text-base font-semibold text-[#4A5D4E]">
+                  איזה כיף, נתראה בשמחה!
+                </p>
+                <p className="text-xs text-[#526054]">פרטי ההגעה שלך נשמרו בהצלחה</p>
               </div>
 
               {/* Event Details Card (Strictly Uniform 18px Font & Weight) */}
@@ -896,11 +862,13 @@ END:VCALENDAR`;
               </div>
 
               <div className="space-y-1">
-                <h2 className="text-xl font-bold text-[#2C352E]">תודה רבה!</h2>
+                <h2 className="text-xl font-bold text-[#2C352E]">
+                  תודה רבה{formData.name.trim() ? `, ${formData.name.trim()}` : ''}!
+                </h2>
                 <p className="text-sm text-[#526054] leading-relaxed font-medium">
-                  חבל שלא יתאפשר לך להגיע.
+                  חבל שלא יתאפשר לך להגיע...
                   <br />
-                  ניפגש בשמחות הבאות
+                  ניפגש בשמחות הבאות!
                 </p>
               </div>
 
