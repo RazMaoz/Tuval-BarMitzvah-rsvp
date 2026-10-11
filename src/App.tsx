@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Calendar, MapPin, Wand2, Undo2, Redo2, Check } from 'lucide-react';
+import { Calendar, MapPin, Wand2, Undo2, Redo2, Check, Clock } from 'lucide-react';
 
 type StepType = 1 | 2 | 3 | 4 | 'decline';
 
@@ -286,19 +286,24 @@ END:VCALENDAR`;
                 </p>
               </div>
 
-              {/* Event Details Card (Exact 18px font) */}
-              <div className="bg-white border border-[#EBE6DC] rounded-2xl p-2.5 space-y-1.5 shadow-xs text-[#4A5D4E]">
-                <div className="flex items-start gap-2">
-                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
-                  <div className="text-[18px] leading-snug text-[#2C352E]">
-                    <div><strong>מועד:</strong> יום שלישי, 10/11/2026</div>
-                    <div className="text-[#4A5D4E] font-medium">שעות: 16:00 - 19:00</div>
-                  </div>
+              {/* Event Details Card (Strictly Uniform 18px Font & Weight) */}
+              <div className="bg-white border border-[#EBE6DC] rounded-2xl p-2.5 space-y-1.5 shadow-xs">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                    <strong className="font-bold text-[#2C352E]">מועד:</strong> יום שלישי, 10/11/2026
+                  </span>
                 </div>
-                <div className="flex items-start gap-2">
-                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
-                  <span className="text-[#2C352E] text-[18px] leading-snug">
-                    <strong>מיקום:</strong> West Garden, רעננה
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                    <strong className="font-bold text-[#2C352E]">שעות:</strong> 16:00 - 19:00
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                    <strong className="font-bold text-[#2C352E]">מיקום:</strong> West Garden, רעננה
                   </span>
                 </div>
                 <div className="pt-1.5 border-t border-[#F0EBE1] text-center text-[16px] text-[#526054]">
@@ -658,24 +663,29 @@ END:VCALENDAR`;
                 <p className="text-sm text-[#526054]">פרטי ההגעה שלך נשמרו בהצלחה</p>
               </div>
 
-              {/* Event Details Card (Exact 18px font) */}
-              <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3 text-[18px] text-[#526054] space-y-2 shadow-xs text-right">
-                <div className="flex items-start gap-2 text-[#3E4A40]">
-                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
-                  <div className="text-[18px] leading-snug text-[#2C352E]">
-                    <div><strong>מועד:</strong> יום שלישי, 10/11/2026</div>
-                    <div className="text-[#4A5D4E] font-medium">שעות: 16:00 - 19:00</div>
-                  </div>
-                </div>
-                <div className="flex items-start gap-2 text-[#3E4A40]">
-                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
-                  <span className="text-[18px] leading-snug">
-                    <strong>מיקום:</strong> West Garden, רעננה
+              {/* Event Details Card (Strictly Uniform 18px Font & Weight) */}
+              <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3 space-y-2 shadow-xs text-right">
+                <div className="flex items-center gap-2.5">
+                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                    <strong className="font-bold text-[#2C352E]">מועד:</strong> יום שלישי, 10/11/2026
                   </span>
                 </div>
-                <div className="flex items-start gap-2 text-[#3E4A40]">
+                <div className="flex items-center gap-2.5">
+                  <Clock className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                    <strong className="font-bold text-[#2C352E]">שעות:</strong> 16:00 - 19:00
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                    <strong className="font-bold text-[#2C352E]">מיקום:</strong> West Garden, רעננה
+                  </span>
+                </div>
+                <div className="flex items-center gap-2.5">
                   <svg
-                    className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1"
+                    className="w-4 h-4 text-[#4A5D4E] flex-shrink-0"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -687,8 +697,8 @@ END:VCALENDAR`;
                       d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
                     />
                   </svg>
-                  <span className="text-[18px] leading-snug">
-                    <strong>חניה:</strong> חניה מסודרת בצמוד למתחם האירועים
+                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                    <strong className="font-bold text-[#2C352E]">חניה:</strong> חניה מסודרת בצמוד למתחם האירועים
                   </span>
                 </div>
               </div>
@@ -705,15 +715,27 @@ END:VCALENDAR`;
                   <span className="tracking-wide">ניווט עם Waze</span>
                 </a>
 
-                {/* Multi-Calendar Options */}
-                <div className="pt-2 border-t border-[#E8E2D5] space-y-1.5">
-                  <div className="text-xs font-bold text-[#554D41]">הוספה ליומן:</div>
-                  <div className="grid grid-cols-2 gap-2">
+                {/* Reassurance & Calendar Card */}
+                <div className="bg-[#F4EFE6] border border-[#E5DECF] rounded-2xl p-3 text-center space-y-2 shadow-xs">
+                  <div className="text-[17px] font-bold text-[#3E4A40] flex items-center justify-center gap-1.5">
+                    <span>🌿</span>
+                    <span>זהו לעת עתה! הכל נשמר בהצלחה.</span>
+                  </div>
+                  <p className="text-[15px] text-[#526054] leading-relaxed">
+                    נדאג לתזכורת כמה ימים לפני השמחה.
+                    <br />
+                    אפשר לסגור חלון זה בבטחה,
+                    <br />
+                    <span className="font-bold text-[#3E4A40]">רק לפני זה יש לשמור ביומן כדי למנוע שכחה:</span>
+                  </p>
+
+                  {/* Calendar Buttons */}
+                  <div className="grid grid-cols-2 gap-2 pt-1">
                     <a
                       href={googleCalendarUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#F2ECE1] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#EBE5D8] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
                     >
                       <Calendar className="w-4 h-4 text-[#4A5D4E]" />
                       <span>Google Calendar</span>
@@ -721,7 +743,7 @@ END:VCALENDAR`;
                     <button
                       type="button"
                       onClick={downloadIcs}
-                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#F2ECE1] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
+                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#EBE5D8] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-1.5 transition-all shadow-xs"
                     >
                       <Calendar className="w-4 h-4 text-[#4A5D4E]" />
                       <span>Apple / Outlook</span>
