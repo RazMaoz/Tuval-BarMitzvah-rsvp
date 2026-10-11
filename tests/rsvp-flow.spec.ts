@@ -106,5 +106,12 @@ test.describe('RSVP App E2E Tests (Redesigned Flow)', () => {
     await page.click('button:has-text("המשך")');
     await page.waitForTimeout(500);
     await page.screenshot({ path: 'C:/Users/razmm/.gemini/antigravity/brain/2ac546f7-f9c7-4d92-9b8d-0f56fe5e39ec/screen3_font50.png' });
+
+    await page.route('/api/rsvp', async (route) => {
+      await route.fulfill({ json: { success: true } });
+    });
+    await page.click('button:has-text("אישור סופי ושליחה")');
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: 'C:/Users/razmm/.gemini/antigravity/brain/2ac546f7-f9c7-4d92-9b8d-0f56fe5e39ec/screen4_font50.png' });
   });
 });

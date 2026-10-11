@@ -272,33 +272,36 @@ END:VCALENDAR`;
         {step === 1 && (
           <div className="flex-1 flex flex-col justify-between h-full min-h-0 space-y-2">
             <div className="space-y-2">
-              {/* Compact Integrated Banner: Tuval Portrait + Quote */}
+              {/* Compact Integrated Banner: Tuval Portrait + Quote (2 lines) */}
               <div className="flex items-center gap-2.5 bg-[#F4EFE6] border border-[#E5DECF] rounded-2xl p-2 shadow-xs">
                 <img
                   src="/tuval_portrait_color.jpg"
                   alt="תובל"
                   className="w-12 h-12 rounded-full object-cover border-2 border-[#4A5D4E]/40 shadow-xs flex-shrink-0"
                 />
-                <p className="text-sm font-medium text-[#3E4A40] italic leading-snug">
-                  "עוד נפגש ויהיה לנו טוב, זה יהיה בקרוב..."
+                <p className="text-[17px] font-medium text-[#3E4A40] italic leading-tight">
+                  "עוד נפגש ויהיה לנו טוב,
+                  <br />
+                  זה יהיה בקרוב..."
                 </p>
               </div>
 
-              {/* Event Details Card (Clean, Readable) */}
-              <div className="bg-white border border-[#EBE6DC] rounded-2xl p-2.5 space-y-1.5 shadow-xs text-sm text-[#4A5D4E]">
+              {/* Event Details Card (Exact 18px font) */}
+              <div className="bg-white border border-[#EBE6DC] rounded-2xl p-2.5 space-y-1.5 shadow-xs text-[#4A5D4E]">
                 <div className="flex items-start gap-2">
                   <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
-                  <span className="text-[#2C352E]">
-                    <strong>מועד:</strong> יום שלישי, 10/11/2026 | 16:00 - 19:00
-                  </span>
+                  <div className="text-[18px] leading-snug text-[#2C352E]">
+                    <div><strong>מועד:</strong> יום שלישי, 10/11/2026</div>
+                    <div className="text-[#4A5D4E] font-medium">שעות: 16:00 - 19:00</div>
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
-                  <span className="text-[#2C352E]">
+                  <span className="text-[#2C352E] text-[18px] leading-snug">
                     <strong>מיקום:</strong> West Garden, רעננה
                   </span>
                 </div>
-                <div className="pt-1.5 border-t border-[#F0EBE1] text-center text-xs text-[#526054]">
+                <div className="pt-1.5 border-t border-[#F0EBE1] text-center text-[16px] text-[#526054]">
                   נשמח לראותך בשמחתנו,{' '}
                   <span className="font-bold text-[#2C352E]">רחל, רז ותובל מעוז</span>
                 </div>
@@ -520,15 +523,15 @@ END:VCALENDAR`;
                     type="button"
                     onClick={handleAIEnhance}
                     disabled={isAILoading}
-                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2.5 rounded-lg text-xs font-semibold shadow-xs disabled:opacity-60"
+                    className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2.5 rounded-lg text-xs font-semibold shadow-xs disabled:opacity-60 whitespace-nowrap"
                   >
-                    <Wand2 className={`w-4 h-4 ${isAILoading ? 'animate-spin' : ''}`} />
-                    <span>
+                    <Wand2 className={`w-4 h-4 flex-shrink-0 ${isAILoading ? 'animate-spin' : ''}`} />
+                    <span className="whitespace-nowrap">
                       {isAILoading
                         ? 'הקסם קורה...'
                         : blessingData.content.trim()
                         ? 'שדרוג ברכה עם AI'
-                        : 'יצירת ברכה מאפס עם AI'}
+                        : 'יצירת ברכה עם AI'}
                     </span>
                   </button>
 
@@ -655,17 +658,24 @@ END:VCALENDAR`;
                 <p className="text-sm text-[#526054]">פרטי ההגעה שלך נשמרו בהצלחה</p>
               </div>
 
-              {/* Event Details Card */}
-              <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3.5 text-sm text-[#526054] space-y-2 shadow-xs text-right">
-                <div className="flex items-center gap-2.5 text-[#3E4A40]">
-                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span>
+              {/* Event Details Card (Exact 18px font) */}
+              <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3 text-[18px] text-[#526054] space-y-2 shadow-xs text-right">
+                <div className="flex items-start gap-2 text-[#3E4A40]">
+                  <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
+                  <div className="text-[18px] leading-snug text-[#2C352E]">
+                    <div><strong>מועד:</strong> יום שלישי, 10/11/2026</div>
+                    <div className="text-[#4A5D4E] font-medium">שעות: 16:00 - 19:00</div>
+                  </div>
+                </div>
+                <div className="flex items-start gap-2 text-[#3E4A40]">
+                  <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1" />
+                  <span className="text-[18px] leading-snug">
                     <strong>מיקום:</strong> West Garden, רעננה
                   </span>
                 </div>
-                <div className="flex items-center gap-2.5 text-[#3E4A40]">
+                <div className="flex items-start gap-2 text-[#3E4A40]">
                   <svg
-                    className="w-4 h-4 text-[#4A5D4E] flex-shrink-0"
+                    className="w-4 h-4 text-[#4A5D4E] flex-shrink-0 mt-1"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -677,7 +687,7 @@ END:VCALENDAR`;
                       d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"
                     />
                   </svg>
-                  <span>
+                  <span className="text-[18px] leading-snug">
                     <strong>חניה:</strong> חניה מסודרת בצמוד למתחם האירועים
                   </span>
                 </div>
@@ -793,15 +803,15 @@ END:VCALENDAR`;
                         type="button"
                         onClick={handleAIEnhance}
                         disabled={isAILoading}
-                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2 rounded-lg text-sm font-medium shadow-xs disabled:opacity-60"
+                        className="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-[#4A5D4E] to-[#637A68] text-white py-2.5 rounded-lg text-xs font-semibold shadow-xs disabled:opacity-60 whitespace-nowrap"
                       >
-                        <Wand2 className={`w-4 h-4 ${isAILoading ? 'animate-spin' : ''}`} />
-                        <span>
+                        <Wand2 className={`w-4 h-4 flex-shrink-0 ${isAILoading ? 'animate-spin' : ''}`} />
+                        <span className="whitespace-nowrap">
                           {isAILoading
                             ? 'הקסם קורה...'
                             : blessingData.content.trim()
                             ? 'שדרוג ברכה עם AI'
-                            : 'יצירת ברכה מאפס עם AI'}
+                            : 'יצירת ברכה עם AI'}
                         </span>
                       </button>
 
