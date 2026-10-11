@@ -308,8 +308,14 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.static(path.join(__dirname, 'dist'), { dotfiles: 'allow' }));
 
-app.get(/(.*)/, (req, res) => {
-  res.sendFile(path.join(__dirname, 'dist', 'index.html'), { dotfiles: 'allow' });
+app.get(/(.*)/, (req, res, next) => {
+  res.sendFile(path.join(__dirname, 'dist', 'index.html'), { dotfiles: 'allow' }, (err) => {
+    if (err) {
+      if (!res.headersSent) {
+        res.status(err.status || 500).end();
+      }
+    }
+  });
 });
 
 app.listen(port, () => {
