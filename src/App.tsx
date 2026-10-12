@@ -914,8 +914,10 @@ export default function App() {
                   <strong className="font-bold text-[#2C352E]">חניה:</strong> חניה מסודרת בצמוד למתחם האירועים
                 </span>
               </div>
-              <div className="pt-1.5 border-t border-[#F0EBE1] text-center text-xs text-[#7A877C]">
-                הכל שמור ומסודר. אפשר לסגור חלון זה בבטחה.
+              <div className="pt-1.5 border-t border-[#F0EBE1] text-center text-xs text-[#7A877C] leading-relaxed">
+                הכל שמור ומסודר.
+                <br />
+                אפשר לסגור חלון זה בבטחה.
               </div>
             </div>
           </div>
