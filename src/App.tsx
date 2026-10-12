@@ -273,16 +273,16 @@ export default function App() {
 
   // Calendar configuration
   const eventDetails = {
-    title: 'בר המצווה של תובל מעוז',
-    description: 'נשמח לראותכם חוגגים איתנו בבר המצווה של תובל!',
-    location: 'West Garden, רעננה',
+    title: 'בר־המצווה של תובל',
+    description: 'איזה כיף, נתראה בשמחה!\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\nרחל, רז ותובל מעוז',
+    location: 'West Garden, רחוב ויצמן 273, רעננה',
     startDate: '20261110T140000Z', // 16:00 Israel time (UTC+2)
     endDate: '20261110T170000Z',   // 19:00 Israel time (UTC+2)
   };
 
   const googleCalendarUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(
     eventDetails.title
-  )}&dates=${eventDetails.startDate}/${eventDetails.endDate}&details=${encodeURIComponent(
+  )}&dates=${eventDetails.startDate}/${eventDetails.endDate}&ctz=Asia/Jerusalem&details=${encodeURIComponent(
     eventDetails.description
   )}&location=${encodeURIComponent(eventDetails.location)}`;
 
@@ -290,13 +290,13 @@ export default function App() {
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
-      'PRODID:-//Tuval Bar Mitzvah//RSVP//HE',
+      'PRODID:-//Tuval Bar Mitzvah//HE',
       'CALSCALE:GREGORIAN',
       'BEGIN:VEVENT',
       `DTSTART:${eventDetails.startDate}`,
       `DTEND:${eventDetails.endDate}`,
       `SUMMARY:${eventDetails.title}`,
-      `DESCRIPTION:${eventDetails.description}`,
+      `DESCRIPTION:${eventDetails.description.replace(/\n/g, '\\n')}`,
       `LOCATION:${eventDetails.location}`,
       'STATUS:CONFIRMED',
       'END:VEVENT',
