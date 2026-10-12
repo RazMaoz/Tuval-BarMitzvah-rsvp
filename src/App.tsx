@@ -374,19 +374,19 @@ export default function App() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                  <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                     <strong className="font-bold text-[#2C352E]">מועד:</strong> יום שלישי, 10/11/2026
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                  <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                     <strong className="font-bold text-[#2C352E]">שעות:</strong> 16:00 - 19:00
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                  <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                     <strong className="font-bold text-[#2C352E]">מיקום:</strong> West Garden, רעננה
                   </span>
                 </div>
@@ -769,25 +769,25 @@ export default function App() {
               <div className="bg-white border border-[#E8E2D5] rounded-2xl p-2.5 space-y-1.5 shadow-xs text-right">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                  <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                     <strong className="font-bold text-[#2C352E]">מועד:</strong> יום שלישי, 10/11/2026
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Clock className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                  <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                     <strong className="font-bold text-[#2C352E]">שעות:</strong> 16:00 - 19:00
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                  <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                     <strong className="font-bold text-[#2C352E]">מיקום:</strong> West Garden, רעננה
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Car className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                  <span className="text-[18px] text-[#2C352E] leading-snug">
+                  <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                     <strong className="font-bold text-[#2C352E]">חניה:</strong> חניה מסודרת בצמוד למתחם האירועים
                   </span>
                 </div>
@@ -883,7 +883,7 @@ export default function App() {
             <div className="bg-white border border-[#E8E2D5] rounded-2xl p-2.5 space-y-1.5 shadow-xs w-full text-right">
               <div className="flex items-center gap-2">
                 <Users className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                <span className="text-[18px] text-[#2C352E] leading-snug">
+                <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                   <strong className="font-bold text-[#2C352E]">הרכב רשום:</strong>{' '}
                   {formData.adults} מבוגרים
                   {formData.children > 0 ? `, ${formData.children} ילדים` : ''}
@@ -892,25 +892,25 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2">
                 <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                <span className="text-[18px] text-[#2C352E] leading-snug">
+                <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                   <strong className="font-bold text-[#2C352E]">מועד:</strong> יום שלישי, 10/11/2026
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                <span className="text-[18px] text-[#2C352E] leading-snug">
+                <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                   <strong className="font-bold text-[#2C352E]">שעות:</strong> 16:00 - 19:00
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                <span className="text-[18px] text-[#2C352E] leading-snug">
+                <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                   <strong className="font-bold text-[#2C352E]">מיקום:</strong> West Garden, רעננה
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <Car className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
-                <span className="text-[18px] text-[#2C352E] leading-snug">
+                <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
                   <strong className="font-bold text-[#2C352E]">חניה:</strong> חניה מסודרת בצמוד למתחם האירועים
                 </span>
               </div>
