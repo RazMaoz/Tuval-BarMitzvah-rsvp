@@ -272,10 +272,15 @@ export default function App() {
   };
 
   // Calendar configuration
+  const RLM = '\u200F';
   const eventDetails = {
-    title: 'בר־המצווה של תובל',
-    description: 'איזה כיף, נתראה בשמחה!\nחניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"\nרחל, רז ותובל מעוז',
-    location: 'West Garden, רחוב ויצמן 273, רעננה',
+    title: `${RLM}בר־המצווה של תובל`,
+    description: [
+      `${RLM}איזה כיף, נתראה בשמחה!${RLM}`,
+      `${RLM}חניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"${RLM}`,
+      `${RLM}רחל, רז ותובל מעוז${RLM}`,
+    ].join('\n'),
+    location: `${RLM}West Garden, רחוב ויצמן 273, רעננה`,
     startDate: '20261110T140000Z', // 16:00 Israel time (UTC+2)
     endDate: '20261110T170000Z',   // 19:00 Israel time (UTC+2)
   };
@@ -287,6 +292,7 @@ export default function App() {
   )}&location=${encodeURIComponent(eventDetails.location)}`;
 
   const downloadIcs = () => {
+    const htmlDescription = '<div dir="rtl" style="direction:rtl;text-align:right;">איזה כיף, נתראה בשמחה!<br>חניה: יש לרשום בווייז "תחנת דלק מעייני שמחה, רעננה"<br>רחל, רז ותובל מעוז</div>';
     const icsContent = [
       'BEGIN:VCALENDAR',
       'VERSION:2.0',
@@ -297,6 +303,7 @@ export default function App() {
       `DTEND:${eventDetails.endDate}`,
       `SUMMARY:${eventDetails.title}`,
       `DESCRIPTION:${eventDetails.description.replace(/\n/g, '\\n')}`,
+      `X-ALT-DESC;FMTTYPE=text/html:${htmlDescription}`,
       `LOCATION:${eventDetails.location}`,
       'STATUS:CONFIRMED',
       'END:VEVENT',
