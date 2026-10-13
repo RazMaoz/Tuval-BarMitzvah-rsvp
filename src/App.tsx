@@ -50,7 +50,7 @@ export default function App() {
   };
 
   const [formData, setFormData] = useState(() => {
-    const savedName = typeof window !== 'undefined' ? sessionStorage.getItem('rsvp_name') || '' : '';
+    const savedName = typeof window !== 'undefined' ? localStorage.getItem('rsvp_name') || '' : '';
     return {
       name: savedName,
       adults: 1,
@@ -61,7 +61,7 @@ export default function App() {
 
   const [guestId, setGuestId] = useState<number | null>(() => {
     if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('rsvp_guest_id');
+      const saved = localStorage.getItem('rsvp_guest_id');
       return saved ? Number(saved) : null;
     }
     return null;
@@ -69,7 +69,7 @@ export default function App() {
 
   const [blessingId, setBlessingId] = useState<number | null>(() => {
     if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem('rsvp_blessing_id');
+      const saved = localStorage.getItem('rsvp_blessing_id');
       return saved ? Number(saved) : null;
     }
     return null;
@@ -121,14 +121,14 @@ export default function App() {
   // Handle Attending decision from Screen 1
   const handleSelectAttending = () => {
     if (!validateName()) return;
-    sessionStorage.setItem('rsvp_name', formData.name.trim());
+    localStorage.setItem('rsvp_name', formData.name.trim());
     goToStep(2);
   };
 
   // Handle Decline decision from Screen 1
   const handleSelectDecline = async () => {
     if (!validateName()) return;
-    sessionStorage.setItem('rsvp_name', formData.name.trim());
+    localStorage.setItem('rsvp_name', formData.name.trim());
     setIsSubmitting(true);
     setSubmitError('');
     try {
@@ -149,7 +149,7 @@ export default function App() {
         const data = await res.json();
         if (data.guestId) {
           setGuestId(data.guestId);
-          sessionStorage.setItem('rsvp_guest_id', String(data.guestId));
+          localStorage.setItem('rsvp_guest_id', String(data.guestId));
         }
       }
       goToStep('decline');
@@ -187,7 +187,7 @@ export default function App() {
       const data = await res.json();
       if (data.guestId) {
         setGuestId(data.guestId);
-        sessionStorage.setItem('rsvp_guest_id', String(data.guestId));
+        localStorage.setItem('rsvp_guest_id', String(data.guestId));
       }
 
       // Submit blessing if entered
@@ -206,7 +206,7 @@ export default function App() {
           const blessData = await blessRes.json();
           if (blessData.blessingId) {
             setBlessingId(blessData.blessingId);
-            sessionStorage.setItem('rsvp_blessing_id', String(blessData.blessingId));
+            localStorage.setItem('rsvp_blessing_id', String(blessData.blessingId));
           }
         }
       }
@@ -241,7 +241,7 @@ export default function App() {
         const blessData = await res.json();
         if (blessData.blessingId) {
           setBlessingId(blessData.blessingId);
-          sessionStorage.setItem('rsvp_blessing_id', String(blessData.blessingId));
+          localStorage.setItem('rsvp_blessing_id', String(blessData.blessingId));
         }
       }
       goToStep('decline_sealed');
@@ -458,16 +458,18 @@ export default function App() {
               <button
                 type="button"
                 onClick={handleSelectAttending}
-                className="w-full py-2.5 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-base font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full py-2.5 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-base font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60"
               >
                 אגיע בשמחה
               </button>
               <button
                 type="button"
                 onClick={handleSelectDecline}
-                className="w-full py-2 px-4 bg-transparent border border-[#9A9182] hover:bg-[#F2ECE1] text-[#554D41] rounded-xl text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full py-2 px-4 bg-transparent border border-[#9A9182] hover:bg-[#F2ECE1] text-[#554D41] rounded-xl text-sm font-semibold transition-all active:scale-[0.98] cursor-pointer disabled:opacity-60"
               >
-                לא מתאפשר לי להגיע
+                {isSubmitting ? 'מעדכן...' : 'לא מתאפשר לי להגיע'}
               </button>
             </div>
           </div>
