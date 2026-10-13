@@ -353,6 +353,9 @@ const __dirname = path.dirname(__filename);
 app.use(express.static(path.join(__dirname, 'dist'), { dotfiles: 'allow' }));
 
 app.get(/(.*)/, (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
   res.sendFile(path.join(__dirname, 'dist', 'index.html'), { dotfiles: 'allow' }, (err) => {
     if (err) {
       if (!res.headersSent) {
