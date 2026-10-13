@@ -42,7 +42,7 @@ export default function Admin() {
   const [blessings, setBlessings] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState<'guests' | 'blessings'>('guests');
   const [visibilityFilter, setVisibilityFilter] = useState<'all' | 'public' | 'private'>('all');
-  const [attendanceFilter, setAttendanceFilter] = useState<'all' | 'attending' | 'declined'>('all');
+  const [attendanceFilter, setAttendanceFilter] = useState<'all' | 'attending' | 'declined' | 'duplicates'>('all');
   const [primarySort, setPrimarySort] = useState<SortRule | null>(null);
   const [secondarySort, setSecondarySort] = useState<SortRule | null>(null);
   const [showMultiSortPanel, setShowMultiSortPanel] = useState(false);
@@ -200,6 +200,21 @@ export default function Admin() {
     return strA.localeCompare(strB, 'he', { numeric: true, sensitivity: 'base' }) * multiplier;
   };
 
+  const nameCounts = useMemo(() => {
+    const counts: Record<string, number> = {};
+    guests.forEach(g => {
+      const n = (g.name || '').trim().toLowerCase();
+      if (n) {
+        counts[n] = (counts[n] || 0) + 1;
+      }
+    });
+    return counts;
+  }, [guests]);
+
+  const duplicateNamesCount = useMemo(() => {
+    return Object.values(nameCounts).filter(c => c > 1).length;
+  }, [nameCounts]);
+
   const sortedGuests = useMemo(() => {
     let list = [...guests];
 
@@ -207,6 +222,8 @@ export default function Admin() {
       list = list.filter(g => g.attending);
     } else if (attendanceFilter === 'declined') {
       list = list.filter(g => !g.attending);
+    } else if (attendanceFilter === 'duplicates') {
+      list = list.filter(g => (nameCounts[(g.name || '').trim().toLowerCase()] || 0) > 1);
     }
 
     if (!primarySort) {
@@ -407,6 +424,19 @@ export default function Admin() {
                 >
                   ❌ לא מגיעים ({guests.length - attendingGuests.length})
                 </button>
+                {duplicateNamesCount > 0 && (
+                  <button
+                    onClick={() => setAttendanceFilter(attendanceFilter === 'duplicates' ? 'all' : 'duplicates')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all border cursor-pointer ${
+                      attendanceFilter === 'duplicates'
+                        ? 'bg-amber-600 text-white border-amber-600 shadow-xs'
+                        : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
+                    }`}
+                    title="הצגת כל הרשומות שבהן שם האורח מופיע יותר מפעם אחת"
+                  >
+                    ⚠️ שמות כפולים ({duplicateNamesCount})
+                  </button>
+                )}
               </div>
 
               {/* Multi-sort status & toggle button */}
@@ -615,7 +645,20 @@ export default function Admin() {
                 <tbody className="divide-y divide-[#4A5D4E]/10 text-sm">
                 {sortedGuests.map((guest) => (
                   <tr key={guest.id} className="hover:bg-[#4A5D4E]/5 transition-colors">
-                    <td className="p-3.5 font-semibold text-[#2C352E]">{guest.name}</td>
+                    <td className="p-3.5 font-semibold text-[#2C352E]">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span>{guest.name}</span>
+                        {(nameCounts[(guest.name || '').trim().toLowerCase()] || 0) > 1 && (
+                          <span
+                            className="inline-flex items-center gap-0.5 text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full border border-amber-300 shadow-2xs"
+                            title={`השם "${guest.name}" מופיע ${nameCounts[(guest.name || '').trim().toLowerCase()]} פעמים ברשימה`}
+                          >
+                            <span>⚠️</span>
+                            <span>כפול ({nameCounts[(guest.name || '').trim().toLowerCase()]})</span>
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="p-3.5">
                       {guest.attending ? (
                         <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">

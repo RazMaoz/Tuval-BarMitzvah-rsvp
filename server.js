@@ -67,8 +67,8 @@ try {
 
 app.post('/api/rsvp', async (req, res) => {
   try {
-    const { id, guestId, name, attending, part } = req.body;
-    const targetId = id || guestId;
+    const { id, guestId, targetId: bodyTargetId, name, attending, part } = req.body;
+    const targetId = id || guestId || bodyTargetId;
     const trimmedName = (name || '').trim();
     if (!trimmedName) {
       return res.status(400).json({ error: 'Name is required' });
@@ -102,17 +102,6 @@ app.post('/api/rsvp', async (req, res) => {
       }
     }
 
-    // Robust fallback: If no ID or ID not found, match by exact name to prevent duplicate rows
-    if (!existingGuestId && trimmedName) {
-      const existingByName = await db.execute({
-        sql: 'SELECT id FROM guests WHERE LOWER(TRIM(name)) = LOWER(TRIM(?)) ORDER BY id DESC LIMIT 1',
-        args: [trimmedName]
-      });
-      if (existingByName.rows.length > 0) {
-        existingGuestId = existingByName.rows[0].id;
-      }
-    }
-    
     if (existingGuestId) {
       await db.execute({
         sql: `UPDATE guests SET name = ?, attending = ?, event_part = ?, babies = ?, kids = ?, adults = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
@@ -162,17 +151,6 @@ app.post('/api/blessings', async (req, res) => {
       }
     }
 
-    // Robust fallback: match by author name to update blessing rather than duplicate
-    if (!existingBlessingId && trimmedAuthor && trimmedAuthor !== 'אורח') {
-      const existingByAuthor = await db.execute({
-        sql: 'SELECT id FROM blessings WHERE LOWER(TRIM(author_name)) = LOWER(TRIM(?)) ORDER BY id DESC LIMIT 1',
-        args: [trimmedAuthor]
-      });
-      if (existingByAuthor.rows.length > 0) {
-        existingBlessingId = existingByAuthor.rows[0].id;
-      }
-    }
-    
     if (existingBlessingId) {
       await db.execute({
         sql: `UPDATE blessings SET author_name = ?, content = ?, is_public = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
