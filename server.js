@@ -182,6 +182,26 @@ app.get('/api/blessings', async (req, res) => {
   }
 });
 
+app.get('/api/guests/:id', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id || id <= 0) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+    const result = await db.execute({
+      sql: 'SELECT id, name, attending, event_part, adults, kids, babies FROM guests WHERE id = ?',
+      args: [id]
+    });
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Guest not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch guest' });
+  }
+});
+
 app.delete('/api/guests/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);

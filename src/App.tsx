@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Calendar, Clock, MapPin, Users, Car, Check, Undo2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, Users, Car, Check, Undo2, Navigation } from 'lucide-react';
 
-type StepType = 1 | 2 | 3 | 4 | 5 | 'decline' | 'decline_sealed';
+type StepType = 1 | 2 | 3 | 4 | 5 | 'decline' | 'decline_sealed' | 'portal';
 
 async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delayMs = 800): Promise<Response> {
   for (let attempt = 1; attempt <= retries; attempt++) {
@@ -20,39 +20,21 @@ async function fetchWithRetry(url: string, options: RequestInit, retries = 3, de
 }
 
 export default function App() {
-  const [step, setStep] = useState<StepType>(() => {
-    return (window.history.state?.step as StepType) || 1;
-  });
-
-  // Silent pre-warm ping on initial load to ensure backend container is awake immediately
-  useEffect(() => {
-    fetch('/api/health').catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (window.history.state?.step === undefined) {
-      window.history.replaceState({ step: 1 }, '');
-    }
-    const handlePopState = (event: PopStateEvent) => {
-      if (event.state && event.state.step !== undefined) {
-        setStep(event.state.step);
-      } else {
-        setStep(1);
-      }
-    };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
-  }, []);
-
-  const goToStep = (newStep: StepType) => {
-    window.history.pushState({ step: newStep }, '');
-    setStep(newStep);
-  };
-
   const [formData, setFormData] = useState(() => {
-    const savedName = typeof window !== 'undefined' ? localStorage.getItem('rsvp_name') || '' : '';
+    if (typeof window !== 'undefined') {
+      const savedName = localStorage.getItem('rsvp_name') || '';
+      const savedAdults = Number(localStorage.getItem('rsvp_adults')) || 1;
+      const savedKids = Number(localStorage.getItem('rsvp_children')) || 0;
+      const savedBabies = Number(localStorage.getItem('rsvp_babies')) || 0;
+      return {
+        name: savedName,
+        adults: savedAdults,
+        children: savedKids,
+        babies: savedBabies,
+      };
+    }
     return {
-      name: savedName,
+      name: '',
       adults: 1,
       children: 0,
       babies: 0,
@@ -75,11 +57,82 @@ export default function App() {
     return null;
   });
 
+  const [isAttendingSaved, setIsAttendingSaved] = useState<boolean | null>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('rsvp_attending');
+      if (saved === 'true') return true;
+      if (saved === 'false') return false;
+    }
+    return null;
+  });
+
+  const [step, setStep] = useState<StepType>(() => {
+    if (typeof window !== 'undefined') {
+      const historyStep = window.history.state?.step as StepType;
+      if (historyStep) return historyStep;
+      const hasCompleted = localStorage.getItem('rsvp_completed') === 'true';
+      if (hasCompleted) return 'portal';
+    }
+    return 1;
+  });
+
+  // Silent pre-warm ping on initial load to ensure backend container is awake immediately
+  useEffect(() => {
+    fetch('/api/health').catch(() => {});
+  }, []);
+
+  // Hydrate guest details directly from DB if guestId exists in localStorage
+  useEffect(() => {
+    if (!guestId) return;
+    fetch(`/api/guests/${guestId}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data && data.name) {
+          const isAtt = Boolean(data.attending);
+          setFormData((prev) => ({
+            ...prev,
+            name: data.name,
+            adults: isAtt ? Math.max(1, data.adults ?? 1) : 0,
+            children: data.kids ?? 0,
+            babies: data.babies ?? 0,
+          }));
+          setIsAttendingSaved(isAtt);
+          localStorage.setItem('rsvp_name', data.name);
+          localStorage.setItem('rsvp_adults', String(isAtt ? Math.max(1, data.adults ?? 1) : 0));
+          localStorage.setItem('rsvp_children', String(data.kids ?? 0));
+          localStorage.setItem('rsvp_babies', String(data.babies ?? 0));
+          localStorage.setItem('rsvp_attending', String(isAtt));
+          localStorage.setItem('rsvp_completed', 'true');
+        }
+      })
+      .catch(() => {});
+  }, [guestId]);
+
+  useEffect(() => {
+    if (window.history.state?.step === undefined) {
+      window.history.replaceState({ step: 1 }, '');
+    }
+    const handlePopState = (event: PopStateEvent) => {
+      if (event.state && event.state.step !== undefined) {
+        setStep(event.state.step);
+      } else {
+        setStep(1);
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const goToStep = (newStep: StepType) => {
+    window.history.pushState({ step: newStep }, '');
+    setStep(newStep);
+  };
+
   const isEditMode = Boolean(guestId);
 
-  // Defense against page refresh on mid-step without a name
+  // Defense against page refresh on mid-step without a name (exempts portal)
   useEffect(() => {
-    if (step !== 1 && !formData.name.trim()) {
+    if (step !== 1 && step !== 'portal' && !formData.name.trim()) {
       goToStep(1);
     }
   }, [step, formData.name]);
@@ -152,6 +205,13 @@ export default function App() {
           localStorage.setItem('rsvp_guest_id', String(data.guestId));
         }
       }
+      setIsAttendingSaved(false);
+      localStorage.setItem('rsvp_name', formData.name.trim());
+      localStorage.setItem('rsvp_attending', 'false');
+      localStorage.setItem('rsvp_adults', '0');
+      localStorage.setItem('rsvp_children', '0');
+      localStorage.setItem('rsvp_babies', '0');
+      localStorage.setItem('rsvp_completed', 'true');
       goToStep('decline');
     } catch {
       goToStep('decline');
@@ -210,7 +270,13 @@ export default function App() {
           }
         }
       }
-
+      setIsAttendingSaved(true);
+      localStorage.setItem('rsvp_name', formData.name.trim());
+      localStorage.setItem('rsvp_attending', 'true');
+      localStorage.setItem('rsvp_adults', String(formData.adults));
+      localStorage.setItem('rsvp_children', String(formData.children));
+      localStorage.setItem('rsvp_babies', String(formData.babies));
+      localStorage.setItem('rsvp_completed', 'true');
       goToStep(5);
     } catch (err: any) {
       setSubmitError(err.message || 'אירעה שגיאה. אנא נסה שנית.');
@@ -244,6 +310,7 @@ export default function App() {
           localStorage.setItem('rsvp_blessing_id', String(blessData.blessingId));
         }
       }
+      localStorage.setItem('rsvp_completed', 'true');
       goToStep('decline_sealed');
     } catch {
       goToStep('decline_sealed');
@@ -616,7 +683,7 @@ export default function App() {
               </button>
               <button
                 type="button"
-                onClick={() => goToStep(1)}
+                onClick={() => goToStep(isEditMode && localStorage.getItem('rsvp_completed') === 'true' ? 'portal' : 1)}
                 className="w-full py-1 text-xs text-[#7A877C] hover:text-[#2C352E] font-medium cursor-pointer transition-colors text-center"
               >
                 חזור למסך הקודם →
@@ -1139,6 +1206,183 @@ export default function App() {
                 אפשר לסגור חלון זה בבטחה.
               </p>
             </div>
+          </div>
+        )}
+
+        {/* ================= RETURNING GUEST PORTAL ================= */}
+        {step === 'portal' && (
+          <div className="flex-1 flex flex-col justify-between min-h-full space-y-2">
+            {isAttendingSaved !== false ? (
+              /* Attending Returning Guest */
+              <div className="flex-1 flex flex-col justify-between h-full space-y-2">
+                {/* Greeting Banner */}
+                <div className="text-center space-y-1 pt-0.5">
+                  <div className="relative w-16 h-16 mx-auto">
+                    <img
+                      src="/tuval_portrait_color.jpg"
+                      alt="תובל"
+                      className="w-16 h-16 rounded-full object-cover border-2 border-[#4A5D4E] shadow-sm mx-auto"
+                    />
+                    <div className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-[#4A5D4E] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                  <h2 className="text-xl font-bold text-[#2C352E] leading-snug">
+                    שלום{formData.name.trim() ? `, ${formData.name.trim()}` : ''}!
+                  </h2>
+                  <p className="text-base font-semibold text-[#4A5D4E] leading-none">
+                    איזה כיף, נתראה בשמחה!
+                  </p>
+                </div>
+
+                {/* Event Details & Composition Card */}
+                <div className="bg-white border border-[#E8E2D5] rounded-2xl p-2.5 space-y-1.5 shadow-xs text-right">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                    <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
+                      <strong className="font-bold text-[#2C352E]">הרכב רשום:</strong>{' '}
+                      {formData.adults} מבוגרים
+                      {formData.children > 0 ? `, ${formData.children} ילדים` : ''}
+                      {formData.babies > 0 ? `, ${formData.babies} תינוקות` : ''}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                    <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
+                      <strong className="font-bold text-[#2C352E]">מועד:</strong> יום שלישי, 10/11/2026
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Clock className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                    <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
+                      <strong className="font-bold text-[#2C352E]">שעות:</strong> 16:00 - 19:00
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                    <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
+                      <strong className="font-bold text-[#2C352E]">מיקום:</strong> West Garden, רעננה
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <Car className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                    <span className="text-[16.5px] tracking-[-0.015em] text-[#2C352E] leading-snug">
+                      <strong className="font-bold text-[#2C352E]">חניה:</strong> בצמוד למתחם ("מעייני שמחה")
+                    </span>
+                  </div>
+                </div>
+
+                {/* Toolkit: Waze & Calendars */}
+                <div className="space-y-1.5">
+                  <a
+                    href="https://waze.com/ul?q=%D7%AA%D7%97%D7%A0%D7%AA%20%D7%93%D7%9C%D7%A7%20%D7%9E%D7%A2%D7%99%D7%99%D7%A0%D7%99%20%D7%A9%D7%9E%D7%97%D7%94%20%D7%A8%D7%A2%D7%A0%D7%A0%D7%94"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full py-2.5 px-4 bg-[#F4EFE6] hover:bg-[#EBE5D8] border border-[#D5CFC3] text-[#3E4A40] rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all shadow-2xs active:scale-[0.98]"
+                  >
+                    <Navigation className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                    <span>ניווט ב-Waze אל החניה</span>
+                  </a>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <a
+                      href={googleCalendarUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#EBE5D8] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-[0.98]"
+                    >
+                      <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                      <span>Google Calendar</span>
+                    </a>
+                    <button
+                      type="button"
+                      onClick={downloadIcs}
+                      className="py-2.5 px-3 bg-white border border-[#D5CFC3] hover:bg-[#EBE5D8] text-[#3E4A40] font-semibold rounded-xl text-xs flex items-center justify-center gap-2 shadow-2xs transition-all active:scale-[0.98] cursor-pointer"
+                    >
+                      <Calendar className="w-4 h-4 text-[#4A5D4E] flex-shrink-0" />
+                      <span>Apple / Outlook</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Edit Link (Gender-Neutral, Balanced) */}
+                <div className="pt-1 pb-1 text-center">
+                  <button
+                    type="button"
+                    onClick={() => goToStep(2)}
+                    className="w-full py-2.5 px-3 bg-white/70 hover:bg-white border border-[#E0D8CB] rounded-xl transition-all cursor-pointer shadow-2xs text-center"
+                  >
+                    <div className="text-[13px] font-medium text-[#526054] leading-tight">
+                      רוצה לשנות את כמות המגיעים או את הברכה?
+                    </div>
+                    <div className="text-[12px] font-bold text-[#4A5D4E] underline underline-offset-2 mt-1">
+                      יש ללחוץ כאן לעדכון
+                    </div>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Declined Returning Guest */
+              <div className="flex-1 flex flex-col justify-between h-full space-y-2.5">
+                <div className="text-center space-y-1 pt-1">
+                  <div className="w-16 h-16 mx-auto rounded-full overflow-hidden border-2 border-[#4A5D4E] shadow-sm">
+                    <img
+                      src="/tuval_portrait_color.jpg"
+                      alt="תובל"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                  <h2 className="text-xl font-bold text-[#2C352E] leading-snug">
+                    שלום{formData.name.trim() ? `, ${formData.name.trim()}` : ''}
+                  </h2>
+                  <p className="text-sm text-[#526054] leading-relaxed font-medium">
+                    תודה על העדכון שלא יתאפשר להגיע.
+                    <br />
+                    נשמח להיפגש בשמחות הבאות!
+                  </p>
+                </div>
+
+                <div className="bg-white border border-[#E8E2D5] rounded-2xl p-3.5 text-center space-y-2 shadow-xs">
+                  <div className="text-xs font-semibold text-[#7A877C]">סטטוס רישום נוכחי:</div>
+                  <div>
+                    <span className="inline-block px-3 py-1 bg-[#F4EFE6] text-[#554D41] rounded-full text-xs font-bold border border-[#E5DECF]">
+                      לא מתאפשר להגיע
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#7A877C] pt-0.5">
+                    תמיד אפשר לשנות את הבחירה במידה והתוכניות ישתנו.
+                  </p>
+                </div>
+
+                <div className="space-y-2 pt-1">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setFormData((prev) => ({ ...prev, adults: Math.max(1, prev.adults) }));
+                      goToStep(2);
+                    }}
+                    className="w-full py-2.5 px-4 bg-[#4A5D4E] hover:bg-[#3B4A3E] text-white rounded-xl text-sm font-bold shadow-md transition-all active:scale-[0.98] cursor-pointer"
+                  >
+                    שינוי החלטה ואישור הגעה
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => goToStep(3)}
+                    className="w-full py-2 px-4 bg-transparent border border-[#9A9182] hover:bg-[#F2ECE1] text-[#554D41] rounded-xl text-xs font-semibold transition-all active:scale-[0.98] cursor-pointer"
+                  >
+                    הוספת ברכה לתובל
+                  </button>
+                </div>
+
+                <div className="text-center text-xs text-[#7A877C] pb-1">
+                  האירוע יתקיים ביום שלישי, 10/11/2026 ב-West Garden, רעננה
+                </div>
+              </div>
+            )}
           </div>
         )}
       </main>
