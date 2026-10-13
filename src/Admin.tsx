@@ -46,6 +46,8 @@ export default function Admin() {
   const [primarySort, setPrimarySort] = useState<SortRule | null>(null);
   const [secondarySort, setSecondarySort] = useState<SortRule | null>(null);
   const [showMultiSortPanel, setShowMultiSortPanel] = useState(false);
+  const [editingGuestId, setEditingGuestId] = useState<number | null>(null);
+  const [editingNameValue, setEditingNameValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
   const fetchData = async () => {
@@ -82,6 +84,33 @@ export default function Admin() {
       });
     } catch (err) {
       console.error(err);
+    }
+  };
+
+  const handleStartEditName = (id: number, currentName: string) => {
+    setEditingGuestId(id);
+    setEditingNameValue(currentName);
+  };
+
+  const handleCancelEditName = () => {
+    setEditingGuestId(null);
+    setEditingNameValue('');
+  };
+
+  const handleSaveGuestName = async (id: number) => {
+    const trimmed = editingNameValue.trim();
+    if (!trimmed) return;
+    setGuests(prev => prev.map(g => g.id === id ? { ...g, name: trimmed } : g));
+    setEditingGuestId(null);
+    try {
+      await fetch(`/api/guests/${id}/name`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: trimmed })
+      });
+    } catch (err) {
+      console.error(err);
+      fetchData();
     }
   };
 
@@ -646,18 +675,59 @@ export default function Admin() {
                 {sortedGuests.map((guest) => (
                   <tr key={guest.id} className="hover:bg-[#4A5D4E]/5 transition-colors">
                     <td className="p-3.5 font-semibold text-[#2C352E]">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span>{guest.name}</span>
-                        {(nameCounts[(guest.name || '').trim().toLowerCase()] || 0) > 1 && (
-                          <span
-                            className="inline-flex items-center gap-0.5 text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full border border-amber-300 shadow-2xs"
-                            title={`השם "${guest.name}" מופיע ${nameCounts[(guest.name || '').trim().toLowerCase()]} פעמים ברשימה`}
+                      {editingGuestId === guest.id ? (
+                        <div className="flex items-center gap-1.5">
+                          <input
+                            type="text"
+                            placeholder="שם אורח"
+                            value={editingNameValue}
+                            onChange={(e) => setEditingNameValue(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveGuestName(guest.id);
+                              if (e.key === 'Escape') handleCancelEditName();
+                            }}
+                            autoFocus
+                            className="bg-white border border-[#4A5D4E] rounded-lg py-1 px-2 text-xs focus:outline-none focus:ring-1 focus:ring-[#4A5D4E] min-w-[130px]"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleSaveGuestName(guest.id)}
+                            className="p-1 text-emerald-700 hover:bg-emerald-50 rounded text-xs font-bold cursor-pointer"
+                            title="שמור שינוי"
                           >
-                            <span>⚠️</span>
-                            <span>כפול ({nameCounts[(guest.name || '').trim().toLowerCase()]})</span>
-                          </span>
-                        )}
-                      </div>
+                            ✓
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleCancelEditName}
+                            className="p-1 text-rose-700 hover:bg-rose-50 rounded text-xs font-bold cursor-pointer"
+                            title="בטל"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 flex-wrap group/name">
+                          <span>{guest.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditName(guest.id, guest.name)}
+                            className="opacity-0 group-hover/name:opacity-100 hover:text-[#4A5D4E] p-0.5 text-xs transition-opacity cursor-pointer"
+                            title="ערוך שם אורח"
+                          >
+                            ✏️
+                          </button>
+                          {(nameCounts[(guest.name || '').trim().toLowerCase()] || 0) > 1 && (
+                            <span
+                              className="inline-flex items-center gap-0.5 text-[10px] bg-amber-100 text-amber-800 font-bold px-1.5 py-0.5 rounded-full border border-amber-300 shadow-2xs"
+                              title={`השם "${guest.name}" מופיע ${nameCounts[(guest.name || '').trim().toLowerCase()]} פעמים ברשימה`}
+                            >
+                              <span>⚠️</span>
+                              <span>כפול ({nameCounts[(guest.name || '').trim().toLowerCase()]})</span>
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </td>
                     <td className="p-3.5">
                       {guest.attending ? (

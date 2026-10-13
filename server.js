@@ -300,6 +300,10 @@ app.get('/api/guests', async (req, res) => {
   }
 });
 
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', uptime: process.uptime(), timestamp: new Date().toISOString() });
+});
+
 app.patch('/api/guests/:id/category', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);
@@ -315,6 +319,28 @@ app.patch('/api/guests/:id/category', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Failed to update category' });
+  }
+});
+
+app.patch('/api/guests/:id/name', async (req, res) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    if (!id || id <= 0) {
+      return res.status(400).json({ error: 'Invalid ID' });
+    }
+    const { name } = req.body;
+    const trimmed = (name || '').trim();
+    if (!trimmed) {
+      return res.status(400).json({ error: 'Name cannot be empty' });
+    }
+    await db.execute({
+      sql: 'UPDATE guests SET name = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?',
+      args: [trimmed, id]
+    });
+    res.json({ success: true, name: trimmed });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to update name' });
   }
 });
 

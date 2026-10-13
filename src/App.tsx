@@ -3,6 +3,22 @@ import { Calendar, Clock, MapPin, Users, Car, Check, Undo2 } from 'lucide-react'
 
 type StepType = 1 | 2 | 3 | 4 | 5 | 'decline' | 'decline_sealed';
 
+async function fetchWithRetry(url: string, options: RequestInit, retries = 3, delayMs = 800): Promise<Response> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const res = await fetch(url, options);
+      if (res.ok || (res.status >= 400 && res.status < 500)) {
+        return res;
+      }
+      if (attempt === retries) return res;
+    } catch (err) {
+      if (attempt === retries) throw err;
+    }
+    await new Promise((r) => setTimeout(r, delayMs * attempt));
+  }
+  throw new Error('Network request failed');
+}
+
 export default function App() {
   const [step, setStep] = useState<StepType>(() => {
     return (window.history.state?.step as StepType) || 1;
@@ -116,7 +132,7 @@ export default function App() {
     setIsSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch('/api/rsvp', {
+      const res = await fetchWithRetry('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,7 +169,7 @@ export default function App() {
     setIsSubmitting(true);
     setSubmitError('');
     try {
-      const res = await fetch('/api/rsvp', {
+      const res = await fetchWithRetry('/api/rsvp', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -176,7 +192,7 @@ export default function App() {
 
       // Submit blessing if entered
       if (blessingData.content.trim()) {
-        const blessRes = await fetch('/api/blessings', {
+        const blessRes = await fetchWithRetry('/api/blessings', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -211,7 +227,7 @@ export default function App() {
     }
     setIsSubmitting(true);
     try {
-      const res = await fetch('/api/blessings', {
+      const res = await fetchWithRetry('/api/blessings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -426,6 +442,12 @@ export default function App() {
                   />
                   {nameError && (
                     <p className="text-xs text-red-600 font-semibold mt-0.5">{nameError}</p>
+                  )}
+                  {!nameError && formData.name.trim().length >= 2 && !formData.name.trim().includes(' ') && (
+                    <p className="text-[12px] text-[#556358] font-medium flex items-center gap-1.5 mt-1.5 bg-[#F4EFE6] px-2.5 py-1.5 rounded-lg border border-[#E5DECF] animate-fadeIn">
+                      <span>💡</span>
+                      <span>כדאי להוסיף שם משפחה כדי שרחל ורז יזהו אתכם בקלות</span>
+                    </p>
                   )}
                 </div>
               </div>
