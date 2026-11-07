@@ -202,6 +202,50 @@ app.get('/api/guests/:id', async (req, res) => {
   }
 });
 
+app.post('/api/guests', async (req, res) => {
+  try {
+    const { name, attending, event_part, part, category } = req.body;
+    const trimmedName = (name || '').trim();
+    if (!trimmedName) {
+      return res.status(400).json({ error: 'Name is required' });
+    }
+
+    const isAttending = (attending === true || attending === 'yes' || attending === 'true' || attending === 1 || attending === '1') ? 1 : 0;
+    const babiesCount = Math.max(0, Math.min(50, Math.floor(Number(req.body.babies) || 0)));
+    const kidsCount = Math.max(0, Math.min(50, Math.floor(Number(req.body.kids || req.body.children) || 0)));
+    const adultsCount = Math.max(isAttending ? 1 : 0, Math.min(50, Math.floor(Number(req.body.adults) || (isAttending ? 1 : 0))));
+
+    const finalPart = isAttending ? (event_part || part || 'האירוע המלא') : (event_part || part || 'אינו מגיע');
+    const finalBabies = isAttending ? babiesCount : 0;
+    const finalKids = isAttending ? kidsCount : 0;
+    const finalAdults = isAttending ? adultsCount : 0;
+    const finalCategory = (category || '').trim();
+
+    const result = await db.execute({
+      sql: `INSERT INTO guests (name, attending, event_part, babies, kids, adults, category, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)`,
+      args: [trimmedName, isAttending, finalPart, finalBabies, finalKids, finalAdults, finalCategory]
+    });
+
+    const newGuestId = Number(result.lastInsertRowid);
+    res.json({
+      success: true,
+      guest: {
+        id: newGuestId,
+        name: trimmedName,
+        attending: isAttending,
+        event_part: finalPart,
+        babies: finalBabies,
+        kids: finalKids,
+        adults: finalAdults,
+        category: finalCategory,
+      }
+    });
+  } catch (err) {
+    console.error('Error adding guest manually:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 app.delete('/api/guests/:id', async (req, res) => {
   try {
     const id = parseInt(req.params.id, 10);

@@ -50,6 +50,20 @@ export default function Admin() {
   const [editingNameValue, setEditingNameValue] = useState<string>('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Add Guest Modal State
+  const [isAddGuestModalOpen, setIsAddGuestModalOpen] = useState(false);
+  const [newGuestData, setNewGuestData] = useState({
+    name: '',
+    attending: true,
+    adults: 1,
+    kids: 0,
+    babies: 0,
+    category: '',
+    event_part: 'האירוע המלא',
+  });
+  const [newGuestError, setNewGuestError] = useState('');
+  const [isSavingNewGuest, setIsSavingNewGuest] = useState(false);
+
   const fetchData = async () => {
     setIsLoading(true);
     try {
@@ -113,6 +127,70 @@ export default function Admin() {
       fetchData();
     }
   };
+
+  const handleCloseAddGuestModal = () => {
+    setIsAddGuestModalOpen(false);
+    setNewGuestData({
+      name: '',
+      attending: true,
+      adults: 1,
+      kids: 0,
+      babies: 0,
+      category: '',
+      event_part: 'האירוע המלא',
+    });
+    setNewGuestError('');
+  };
+
+  const handleAddNewGuest = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    const trimmed = newGuestData.name.trim();
+    if (!trimmed) {
+      setNewGuestError('נא להזין שם אורח או משפחה');
+      return;
+    }
+    setNewGuestError('');
+    setIsSavingNewGuest(true);
+
+    try {
+      const res = await fetch('/api/guests', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: trimmed,
+          attending: newGuestData.attending,
+          event_part: newGuestData.attending ? (newGuestData.event_part || 'האירוע המלא') : 'אינו מגיע',
+          adults: newGuestData.attending ? Math.max(1, newGuestData.adults) : 0,
+          kids: newGuestData.attending ? Math.max(0, newGuestData.kids) : 0,
+          babies: newGuestData.attending ? Math.max(0, newGuestData.babies) : 0,
+          category: newGuestData.category,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || 'שגיאה בשמירת האורח');
+      }
+
+      handleCloseAddGuestModal();
+      await fetchData();
+    } catch (err: any) {
+      console.error(err);
+      setNewGuestError(err.message || 'אירעה שגיאה בשמירת האורח');
+    } finally {
+      setIsSavingNewGuest(false);
+    }
+  };
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isAddGuestModalOpen) {
+        handleCloseAddGuestModal();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAddGuestModalOpen]);
 
   const handleDeleteGuest = async (id: number, name: string) => {
     if (!window.confirm(`האם למחוק את האורח "${name}"?`)) return;
@@ -350,8 +428,16 @@ export default function Admin() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
-              onClick={handleExportCSV}
+              onClick={() => setIsAddGuestModalOpen(true)}
               className="px-3.5 py-2 bg-[#4A5D4E] hover:bg-[#3E4E42] text-white text-sm font-semibold rounded-xl transition-all flex items-center gap-1.5 shadow-xs active:scale-95 cursor-pointer"
+              title="הוספת אורח חדש באופן ידני למערכת"
+            >
+              <span>➕</span>
+              <span>הוספת אורח</span>
+            </button>
+            <button
+              onClick={handleExportCSV}
+              className="px-3.5 py-2 bg-white border border-[#4A5D4E]/30 text-sm font-semibold rounded-xl hover:bg-[#F4EFE6] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
               title="ייצוא כל רשימת האורחים לקובץ אקסל (CSV בקידוד עברי מלא)"
             >
               <span>📥</span>
@@ -922,6 +1008,262 @@ export default function Admin() {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {/* ADD GUEST MODAL */}
+        {isAddGuestModalOpen && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs overflow-y-auto"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) handleCloseAddGuestModal();
+            }}
+          >
+            <div
+              className="bg-[#FDFBF7] border border-[#4A5D4E]/25 rounded-2xl p-5 sm:p-6 shadow-2xl max-w-lg w-full text-right space-y-4 my-auto relative"
+              dir="rtl"
+            >
+              {/* Modal Header */}
+              <div className="flex items-center justify-between pb-3 border-b border-[#4A5D4E]/15">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">➕</span>
+                  <h3 className="text-lg sm:text-xl font-bold text-[#2C352E]">הוספת אורח ידנית</h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleCloseAddGuestModal}
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-gray-500 hover:text-gray-800 hover:bg-gray-200/60 transition-colors cursor-pointer text-base"
+                  title="סגור חלון"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Form Content */}
+              <form onSubmit={handleAddNewGuest} className="space-y-4">
+                {/* Guest Name Input */}
+                <div className="space-y-1">
+                  <label htmlFor="new-guest-name" className="block text-xs font-bold text-[#2C352E]">
+                    שם האורח / משפחה <span className="text-rose-600">*</span>
+                  </label>
+                  <input
+                    id="new-guest-name"
+                    type="text"
+                    required
+                    placeholder="למשל: ישראל ישראלי או משפחת כהן"
+                    value={newGuestData.name}
+                    onChange={(e) => {
+                      setNewGuestData(prev => ({ ...prev, name: e.target.value }));
+                      if (newGuestError) setNewGuestError('');
+                    }}
+                    autoFocus
+                    className="w-full bg-white border border-[#4A5D4E]/30 rounded-xl py-2 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] shadow-2xs"
+                  />
+                  {newGuestError && (
+                    <p className="text-xs text-rose-600 font-semibold">{newGuestError}</p>
+                  )}
+
+                  {/* Soft Warning for Duplicate Names */}
+                  {(() => {
+                    const trimmed = newGuestData.name.trim().toLowerCase();
+                    const duplicateCount = trimmed ? (nameCounts[trimmed] || 0) : 0;
+                    if (duplicateCount > 0) {
+                      return (
+                        <div className="bg-amber-50 border border-amber-300 rounded-xl p-2.5 text-xs text-amber-900 flex items-start gap-2 mt-1.5">
+                          <span className="text-base flex-shrink-0">⚠️</span>
+                          <div>
+                            <span className="font-bold">
+                              שים לב: אורח בשם זה כבר קיים ברשימה ({duplicateCount} {duplicateCount === 1 ? 'פעם' : 'פעמים'}).
+                            </span>
+                            <p className="text-[11px] opacity-85 mt-0.5">
+                              באפשרותך להמשיך ולהוסיף בכל זאת במידה ומדובר באורח נוסף בעל שם זהה.
+                            </p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
+                {/* Attendance Status Toggle */}
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-[#2C352E]">סטטוס הגעה</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setNewGuestData(prev => ({
+                          ...prev,
+                          attending: true,
+                          adults: Math.max(1, prev.adults),
+                          event_part: 'האירוע המלא',
+                        }))
+                      }
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+                        newGuestData.attending
+                          ? 'bg-emerald-700 text-white border-emerald-700 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-[#F4EFE6]'
+                      }`}
+                    >
+                      <span>✅</span>
+                      <span>מגיע לחגוג</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setNewGuestData(prev => ({
+                          ...prev,
+                          attending: false,
+                          adults: 0,
+                          kids: 0,
+                          babies: 0,
+                          event_part: 'אינו מגיע',
+                        }))
+                      }
+                      className={`py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 border cursor-pointer ${
+                        !newGuestData.attending
+                          ? 'bg-rose-700 text-white border-rose-700 shadow-xs'
+                          : 'bg-white text-gray-700 border-gray-300 hover:bg-[#F4EFE6]'
+                      }`}
+                    >
+                      <span>❌</span>
+                      <span>לא מגיע</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Guest Counts (Adults, Kids, Babies) */}
+                {newGuestData.attending ? (
+                  <div className="bg-white border border-[#4A5D4E]/20 rounded-xl p-3 space-y-2.5 shadow-2xs">
+                    <span className="text-xs font-bold text-[#2C352E] block">הרכב מוזמנים</span>
+                    
+                    {/* Adults */}
+                    <div className="flex items-center justify-between text-xs">
+                      <div>
+                        <span className="font-semibold text-[#2C352E]">מבוגרים ונוער</span>
+                        <span className="text-[11px] opacity-60 mr-1">(11+)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="הפחת מבוגר"
+                          onClick={() => setNewGuestData(prev => ({ ...prev, adults: Math.max(1, prev.adults - 1) }))}
+                          className="w-7 h-7 rounded-lg border border-[#4A5D4E]/30 bg-[#FDFBF7] hover:bg-[#EAE4D7] font-bold text-sm flex items-center justify-center text-[#4A5D4E] cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center font-bold text-sm text-[#2C352E]">{newGuestData.adults}</span>
+                        <button
+                          type="button"
+                          aria-label="הוסף מבוגר"
+                          onClick={() => setNewGuestData(prev => ({ ...prev, adults: Math.min(50, prev.adults + 1) }))}
+                          className="w-7 h-7 rounded-lg border border-[#4A5D4E]/30 bg-[#FDFBF7] hover:bg-[#EAE4D7] font-bold text-sm flex items-center justify-center text-[#4A5D4E] cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Kids */}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-[#4A5D4E]/10">
+                      <div>
+                        <span className="font-semibold text-[#2C352E]">ילדים</span>
+                        <span className="text-[11px] opacity-60 mr-1">(3-11)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="הפחת ילד"
+                          onClick={() => setNewGuestData(prev => ({ ...prev, kids: Math.max(0, prev.kids - 1) }))}
+                          className="w-7 h-7 rounded-lg border border-[#4A5D4E]/30 bg-[#FDFBF7] hover:bg-[#EAE4D7] font-bold text-sm flex items-center justify-center text-[#4A5D4E] cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center font-bold text-sm text-[#2C352E]">{newGuestData.kids}</span>
+                        <button
+                          type="button"
+                          aria-label="הוסף ילד"
+                          onClick={() => setNewGuestData(prev => ({ ...prev, kids: Math.min(50, prev.kids + 1) }))}
+                          className="w-7 h-7 rounded-lg border border-[#4A5D4E]/30 bg-[#FDFBF7] hover:bg-[#EAE4D7] font-bold text-sm flex items-center justify-center text-[#4A5D4E] cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Babies */}
+                    <div className="flex items-center justify-between text-xs pt-1 border-t border-[#4A5D4E]/10">
+                      <div>
+                        <span className="font-semibold text-[#2C352E]">תינוקות</span>
+                        <span className="text-[11px] opacity-60 mr-1">(עד גיל 3)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          aria-label="הפחת תינוק"
+                          onClick={() => setNewGuestData(prev => ({ ...prev, babies: Math.max(0, prev.babies - 1) }))}
+                          className="w-7 h-7 rounded-lg border border-[#4A5D4E]/30 bg-[#FDFBF7] hover:bg-[#EAE4D7] font-bold text-sm flex items-center justify-center text-[#4A5D4E] cursor-pointer"
+                        >
+                          -
+                        </button>
+                        <span className="w-6 text-center font-bold text-sm text-[#2C352E]">{newGuestData.babies}</span>
+                        <button
+                          type="button"
+                          aria-label="הוסף תינוק"
+                          onClick={() => setNewGuestData(prev => ({ ...prev, babies: Math.min(50, prev.babies + 1) }))}
+                          className="w-7 h-7 rounded-lg border border-[#4A5D4E]/30 bg-[#FDFBF7] hover:bg-[#EAE4D7] font-bold text-sm flex items-center justify-center text-[#4A5D4E] cursor-pointer"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-[#F4EFE6] border border-[#E5DECF] rounded-xl p-3 text-center text-xs text-[#6B786D]">
+                    ההרכב מאופס באופן אוטומטי עבור אורח שאינו מגיע.
+                  </div>
+                )}
+
+                {/* Category Selection */}
+                <div className="space-y-1">
+                  <label htmlFor="new-guest-category" className="block text-xs font-bold text-[#2C352E]">
+                    שיוך לקטגוריה
+                  </label>
+                  <select
+                    id="new-guest-category"
+                    value={newGuestData.category}
+                    onChange={(e) => setNewGuestData(prev => ({ ...prev, category: e.target.value }))}
+                    className="w-full bg-white border border-[#4A5D4E]/30 rounded-xl py-2 px-3 text-xs focus:outline-none focus:ring-2 focus:ring-[#4A5D4E] shadow-2xs"
+                  >
+                    {CATEGORIES.map((cat) => (
+                      <option key={cat} value={cat}>
+                        {cat === '' ? 'ללא קטגוריה' : cat}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-end gap-2 pt-2 border-t border-[#4A5D4E]/15">
+                  <button
+                    type="button"
+                    onClick={handleCloseAddGuestModal}
+                    disabled={isSavingNewGuest}
+                    className="px-4 py-2 bg-white border border-gray-300 text-gray-700 text-xs font-semibold rounded-xl hover:bg-gray-100 transition-colors cursor-pointer disabled:opacity-50"
+                  >
+                    ביטול
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingNewGuest}
+                    className="px-5 py-2 bg-[#4A5D4E] hover:bg-[#3E4E42] text-white text-xs font-bold rounded-xl shadow-xs transition-all active:scale-95 cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
+                  >
+                    <span>{isSavingNewGuest ? 'שומר...' : 'הוסף אורח'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         )}
 
